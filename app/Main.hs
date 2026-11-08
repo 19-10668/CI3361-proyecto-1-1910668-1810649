@@ -21,8 +21,6 @@ promt = do
         (h:c)
             | h == "salir" -> putStrLn "adiosito"
             | otherwise -> putStrLn ("\"" ++ h ++ "\"" ++ " no se reconoce como comando")
-
-    
             
 
 
