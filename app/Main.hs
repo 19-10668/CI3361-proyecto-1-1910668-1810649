@@ -1,7 +1,10 @@
+module Main (main) where
 
 import System.IO 
 import Text.Read
 
+import Motor.Comandos (leerComando) 
+import Motor.Tipos (Comando (Comando, cmd, arg1))
 
 -- ppp :: [(String, String)] -> String
 -- ppp [] = []
@@ -16,11 +19,12 @@ promt = do
     putStr "> "
     hFlush stdout
     linea <- getLine
-    case words linea of
-        [] -> promt
-        (h:c)
-            | h == "salir" -> putStrLn "adiosito"
-            | otherwise -> putStrLn ("\"" ++ h ++ "\"" ++ " no se reconoce como comando")
+    case leerComando linea of
+        Nothing -> promt
+        Just c 
+            | cmd c == "salir" -> putStrLn("adiosito")
+            |otherwise -> promt
+        
             
 
 

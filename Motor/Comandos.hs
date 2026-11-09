@@ -1,8 +1,12 @@
-module Comandos () where
+module Motor.Comandos (leerComando) where
 
 
-import Tipos (Comamdo)
+import Motor.Tipos (Comando (Comando, cmd, arg1))
 
-leerComando :: [String] -> Maybe Comamdo
+leerComando :: String -> Maybe Comando
 leerComando [] = Nothing
-leerComando (h,t) = just h
+leerComando s = case words s of
+    [] -> Nothing
+    (h:c)
+        | h == "salir" -> Just Comando {cmd = "salir", arg1 = ""}
+        | otherwise -> Nothing

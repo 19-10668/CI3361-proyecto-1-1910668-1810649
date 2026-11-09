@@ -1,5 +1,8 @@
-module Tipos (
-    Comamdo
+module Motor.Tipos (
+    Comando (Comando, cmd, arg1)
 ) where
 
-type Comamdo = String
+data Comando = Comando {
+    cmd :: String,
+    arg1 :: String
+} deriving (Show, Eq)
