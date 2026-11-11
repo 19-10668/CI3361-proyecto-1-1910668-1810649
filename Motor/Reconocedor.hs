@@ -1,21 +1,16 @@
 module Motor.Reconocedor 
   ( ReadS
-  , LineaParseada (..)
   , leerLineaArchivo
   ) where
 
 import Data.Char (isSpace)
+import Motor.Tipos 
 
 -- definición de ReadS:
 -- un reconocedor toma un String y devuelve una lista de pares (resultado, resto).
 -- type ReadS a = String -> [(a, String)]
 
--- representación intermedia de una linea analizada
-data LineaParseada
-  = LClave String String -- clave y Valor (ej: "MUNDO", "Entrega a última hora")
-  | LSeparador           -- separador "---"
-  | LVacia               -- linea en blanco o comentario
-  deriving (Show, Eq)
+
 
 -- remueve los espacios al inicio de una cadena recursivamente
 quitarEspaciosInicio :: String -> String
@@ -55,6 +50,11 @@ esComentario :: String -> Bool
 esComentario s = 
     let limpio = quitarEspaciosInicio s
     in not (null limpio) && head limpio == '#'
+    -- el uso de head aqui es perfectamente seguro, es decir, head no dara errores, pues
+    -- primero tamos verificando que limpio no este vacio. En el caso de que limpio este
+    -- vacio, tonces ya todo el primer termino es falso, y como haskell tiene corto circuito
+    -- no vamos a caer en head :P
+    -- pero de todas formas haskell tira un warnig en head diciendo que es mejor usar pattern matching 
 
 -- reconoce una palabra o identificador usando lex
 leerToken :: ReadS String

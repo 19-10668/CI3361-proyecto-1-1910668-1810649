@@ -7,7 +7,8 @@ module Motor.Tipos (
     Mundo,
     Meta (..),
     Estado (..),
-    ErrorMundo (..)
+    ErrorMundo (..),
+    LineaParseada (..)
 ) where
 
 import qualified Data.Map as M
@@ -61,3 +62,10 @@ data Estado = Estado {
 data ErrorMundo = ErrorSintaxis Int String
                 | ErrorSemantico String
     deriving (Show, Eq)
+
+-- representación intermedia de una linea analizada
+data LineaParseada
+  = LClave String String -- clave y Valor (ej: "MUNDO", "Entrega a última hora")
+  | LSeparador           -- separador "---"
+  | LVacia               -- linea en blanco o comentario
+  deriving (Show, Eq)
