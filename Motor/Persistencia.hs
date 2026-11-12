@@ -1,11 +1,10 @@
-module Motor.Persistencia () where
+module Motor.Persistencia (leerArchivo) where
 
 import System.IO
 import Motor.Reconocedor
 
 
 leerArchivo :: FilePath -> IO String
-leerArchivo p = do
-    s <- readFile p
-    s
+leerArchivo p = readFile p
+
 

@@ -1,6 +1,9 @@
 module Motor.Reconocedor 
   ( ReadS
   , leerLineaArchivo
+  , quitarEspaciosInicio
+  , imprimir
+  , sacarLineaP
   ) where
 
 import Data.Char (isSpace)
@@ -96,3 +99,14 @@ leerLineaArchivo s =
     ++
     -- 3. considerar linea vacia o comentario
     [ (LVacia, s) | esSoloEspacios s || esComentario s ]
+
+sacarLineaP :: [(LineaParseada, String)] -> LineaParseada
+sacarLineaP ((l,s):xs) = l
+
+imprimir :: (LineaParseada, String) -> String
+imprimir lista = impAux (fst lista)
+
+impAux :: LineaParseada -> String
+impAux (LClave k v) = k
+impAux (LSeparador) = "separador"
+impAux (LVacia) = "vacia"
