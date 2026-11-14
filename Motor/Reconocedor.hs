@@ -1,9 +1,10 @@
 module Motor.Reconocedor 
-  ( ReadS
-  , leerLineaArchivo
-  , quitarEspaciosInicio
-  , imprimir
-  , sacarLineaP
+  ( ReadS, 
+  leerLineaArchivo,
+  quitarEspaciosInicio,
+  imprimir,
+  sacarLineaP,
+  trim
   ) where
 
 import Data.Char (isSpace)
