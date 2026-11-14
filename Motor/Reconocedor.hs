@@ -54,10 +54,7 @@ esComentario :: String -> Bool
 esComentario s = 
     let limpio = quitarEspaciosInicio s
     in not (null limpio) && head limpio == '#'
-    -- el uso de head aqui es perfectamente seguro, es decir, head no dara errores, pues
-    -- primero tamos verificando que limpio no este vacio. En el caso de que limpio este
-    -- vacio, tonces ya todo el primer termino es falso, y como haskell tiene corto circuito
-    -- no vamos a caer en head :P
+    -- el uso de head aqui es perfectamente seguro, por el cotro circuito :P
     -- pero de todas formas haskell tira un warnig en head diciendo que es mejor usar pattern matching 
 
 -- reconoce una palabra o identificador usando lex

@@ -30,111 +30,11 @@ promt = do
         Just c 
             | cmd c == "salir" -> putStrLn("adiosito")
             |otherwise -> promt
-<<<<<<< HEAD
-        
-            
-
-
-
-
-
-
-aux :: LineaParseada -> String
-aux (LClave k v) = k
-aux (LSeparador) = "separador"
-aux (LVacia) = "vacia"
-
-sacarValor :: LineaParseada -> String
-sacarValor (LClave k v) = v
-
-sacarCabecera :: [LineaParseada] -> [LineaParseada] -- esto tiene que tenber ecactamente 3 valores
-sacarCabecera [] = []
-sacarCabecera (x:xs) 
-    | aux x == "MUNDO" = [x] ++ sacarCabecera xs
-    | aux x == "INICIO" = [x] ++ sacarCabecera xs
-    | aux x == "META" = [x] ++ sacarCabecera xs
-    | aux x == "separador" || aux x == "vacia" = [] ++ sacarCabecera xs
-    | otherwise = []
-
-
-sacarObjetos :: [LineaParseada] -> [LineaParseada]
-sacarObjetos [] = []
-sacarObjetos (x:xs)
-    | aux x == "OBJETO" = [x] ++ sacarObjetos xs
-    | aux x == "DESC" = [x] ++ sacarObjetos xs
-    | aux x == "separador" || aux x == "vacia" || aux x == "MUNDO" || aux x == "INICIO" || aux x == "META" = [] ++ sacarObjetos xs
-    | otherwise = []
-
-miniSacarSalas :: [LineaParseada] -> [LineaParseada]
-miniSacarSalas (x:xs)
-    | aux x == "SALA" = [x] ++ xs 
-    | otherwise = miniSacarSalas xs
-
-sacarSalas :: [LineaParseada] -> [LineaParseada]
-sacarSalas [] = []
-sacarSalas (x:xs)
-    | aux x == "SALA" = [x] ++ sacarSalas xs
-    | aux x == "DESC" = [x] ++ sacarSalas xs
-    | aux x == "SALIDA" = [x] ++ sacarSalas xs
-    | aux x == "OBJETO" = [x] ++ sacarSalas xs
-    | aux x == "separador" || aux x == "vacia" = [] ++ sacarSalas xs
-    | otherwise = []
-
-convertirCab :: [LineaParseada] -> Cabecera 
-convertirCab (mundo:inicio:meta:xs) = Cabecera (sacarValor mundo) (sacarValor inicio) (sacarValor meta)
-
-convertirObjeto :: [LineaParseada] -> [Objeto]
-convertirObjeto [] = []
-convertirObjeto (obj:desc:xs) = [Objeto (sacarValor obj) (sacarValor desc)] ++ convertirObjeto xs
-
-convertirBloque_Objetos :: [LineaParseada] -> Bloque_Objetos
-convertirBloque_Objetos l = Bloque_Objetos (convertirObjeto l)
-
-
-
-primeropSalaYDesc:: [LineaParseada] -> ([LineaParseada], String, String)
-primeropSalaYDesc [] = ([], [], [])
-primeropSalaYDesc (sala:desc:xs) =  (xs, sacarValor sala, sacarValor desc)
-
-segundoSalidas :: ([LineaParseada], String, String, [Salida]) -> ([LineaParseada], String, String, [Salida] )
-segundoSalidas ([], sala, desc, salidas) = ([], sala, desc, salidas)
-segundoSalidas ((x:xs), sala, desc,  salidas) 
-    | aux x == "SALIDA" = segundoSalidas (xs, sala, desc, salidas ++ [Salida (sacarValor x)])
-    | otherwise = ([x] ++ xs, sala, desc, salidas)
-
-terceroObjetos :: ([LineaParseada], String, String, [Salida], [ID_Objeto]) -> ([LineaParseada], String, String, [Salida], [ID_Objeto] )
-terceroObjetos ([], sala, desc, salidas,  obj) = ([], sala, desc, salidas,  obj) 
-terceroObjetos ((x:xs), sala, desc, salidas,  obj)
-    | aux x == "OBJETO" = terceroObjetos (xs, sala, desc, salidas, obj ++ [sacarValor x])
-    | otherwise = ([x] ++ xs, sala, desc, salidas, obj)
-
-
-proceso1Sala :: ([LineaParseada], [Sala]) -> ([LineaParseada], [Sala])
-proceso1Sala ([], completa) = ([], completa)
-proceso1Sala ((z:zs), completa) 
-    | aux z == "SALA" = proceso1Sala ((\(lista, c) -> (lista, completa ++ [c])  ) (proceso2Sala (terceroObjetos ((\(xs, sala, desc, salidas) -> (xs, sala, desc, salidas, [])) (segundoSalidas ((\(xs, sala, desc) -> (xs, sala, desc, [])) (primeropSalaYDesc ([z] ++ zs) )))))))
-    
-    
-convertirBloque_Salas :: ([LineaParseada], [Sala]) -> Bloque_Salas
-convertirBloque_Salas (l, salas) = Bloque_Salas salas
-
-proceso2Sala :: ([LineaParseada], String, String, [Salida], [ID_Objeto]) -> ([LineaParseada], Sala)
-proceso2Sala (xs, sala, desc, salidas, obj) = (xs, Sala sala desc salidas obj)
-
-
-
-
-
-vaciarInfo :: String -> (Bloque_Salas, Mundo)
-vaciarInfo mundin = 
-    let lineasParse = map sacarLineaP (map (leerLineaArchivo) (lines mundin)) -- :: [ [(LineaParseada, String)] ] -> [LineaParseada]
-=======
 
 
 --vaciarInfo :: String -> (Bloque_Salas, Mundo)
 --vaciarInfo mundin = 
   --  let lineasParse = map sacarLineaP (map (leerLineaArchivo) (lines mundin)) -- :: [ [(LineaParseada, String)] ] -> [LineaParseada]
->>>>>>> 08f1b71f9834a1ea6534c1d07bd2df320621084a
     
     
     
@@ -160,8 +60,42 @@ vaciarInfo mundin =
  --   ) 
  --   "" 
  
+instance Show Meta where
+    show (LlegarA a) =  a
+    show (LlevarA a b) =  a ++ " " ++ b
+
 instance Show Cabecera where
-    showsPrec _ = show Cabecera
+    show (Cabecera a b c) = a ++ " " ++ b ++ " " ++ show c
+
+instance Show Objeto where
+    show (Objeto a b) = a ++ b
+
+instance Show Bloque_Objetos where
+    show (Bloque_Objetos a) = show a
+
+instance Show Direccion where
+    show Norte = "Norte"
+    show Sur = "Sur"
+    show Este = "Este"
+    show Oeste = "Oeste"
+    show Arriba = "Arriba"
+    show Abajo = "Abajo"
+
+instance Show Salida where
+    show (Salida a b c) = show a ++ b ++ show c
+
+instance Show Sala where
+    show (Sala a b c d) = a ++ b ++ show c ++ show d
+
+instance Show Bloque_Salas where
+    show (Bloque_Salas a) = show a
+
+instance Show Mundo where
+    show (Mundo a b c) = show a ++ show b ++ show c
+
+instance Show ErrorMundo where
+    show (ErrorSintaxis a b) = (show a) ++ b
+    show (ErrorSemantico a) = a 
 
 main :: IO ()
 main = do
@@ -172,19 +106,11 @@ main = do
     -- promt
     
 
-<<<<<<< HEAD
-    mundo <- leerArchivo "entrega.txt"
-    let mundin = vaciarInfo mundo
-    putStrLn ( show (Cabecera "hola" "hola" "hola"))
-    putStrLn(show (snd mundin))
-    forM_ (lines mundo) $ \linea -> do
-=======
     mundo <- leerArchivo "invalido_sintaxis.txt"
 --    let mundin = vaciarInfo mundo
 
 --    putStrLn(show (snd mundin))
 --    forM_ (lines mundo) $ \linea -> do
->>>>>>> 08f1b71f9834a1ea6534c1d07bd2df320621084a
 
 --        putStrLn ( imprimir ( head (leerLineaArchivo linea)) )
         
