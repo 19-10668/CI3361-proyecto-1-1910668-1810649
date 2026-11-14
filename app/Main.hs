@@ -8,6 +8,9 @@ import Motor.Tipos
 import Motor.Reconocedor
 import Motor.Persistencia 
 import Control.Monad (forM, forM_)
+--import Text.Read (readMaybe)
+import Data.Char (toLower)
+import Motor.Mundo
 
 -- ppp :: [(String, String)] -> String
 -- ppp [] = []
@@ -27,6 +30,7 @@ promt = do
         Just c 
             | cmd c == "salir" -> putStrLn("adiosito")
             |otherwise -> promt
+<<<<<<< HEAD
         
             
 
@@ -124,30 +128,37 @@ proceso2Sala (xs, sala, desc, salidas, obj) = (xs, Sala sala desc salidas obj)
 vaciarInfo :: String -> (Bloque_Salas, Mundo)
 vaciarInfo mundin = 
     let lineasParse = map sacarLineaP (map (leerLineaArchivo) (lines mundin)) -- :: [ [(LineaParseada, String)] ] -> [LineaParseada]
+=======
+
+
+--vaciarInfo :: String -> (Bloque_Salas, Mundo)
+--vaciarInfo mundin = 
+  --  let lineasParse = map sacarLineaP (map (leerLineaArchivo) (lines mundin)) -- :: [ [(LineaParseada, String)] ] -> [LineaParseada]
+>>>>>>> 08f1b71f9834a1ea6534c1d07bd2df320621084a
     
     
     
-    in (  convertirBloque_Salas ( proceso1Sala ( (sacarSalas (miniSacarSalas lineasParse), []) )), 
-    Mundo {
-    cabecera = convertirCab (sacarCabecera lineasParse),
-    objetos  = convertirBloque_Objetos (sacarObjetos lineasParse),
-    salas = convertirBloque_Salas ( proceso1Sala ( (sacarSalas (miniSacarSalas lineasParse), []) ))
-})
+ --   in (  convertirBloque_Salas ( proceso1Sala ( (sacarSalas (miniSacarSalas lineasParse), []) )), 
+   -- Mundo {
+    --cabecera = convertirCab (sacarCabecera lineasParse),
+  --  objetos  = convertirBloque_Objetos (sacarObjetos lineasParse),
+   -- salas = convertirBloque_Salas ( proceso1Sala ( (sacarSalas (miniSacarSalas lineasParse), []) ))-
+--})
 
 
 
-data Coso = Coso {
-    cs :: Int,
-    gh :: String
-} deriving (Show, Eq)
-data Mini = Mini Int String
+--data Coso = Coso {
+ --   cs :: Int,
+ --   gh :: String
+--} deriving (Show, Eq)
+--data Mini = Mini Int String
 
-func :: String -> Mini
-func s = Mini 
-    (
-        4
-    ) 
-    "" 
+--func :: String -> Mini
+--func s = Mini 
+ --   (
+ --       4
+ --   ) 
+ --   "" 
  
 instance Show Cabecera where
     showsPrec _ = show Cabecera
@@ -161,11 +172,31 @@ main = do
     -- promt
     
 
+<<<<<<< HEAD
     mundo <- leerArchivo "entrega.txt"
     let mundin = vaciarInfo mundo
     putStrLn ( show (Cabecera "hola" "hola" "hola"))
     putStrLn(show (snd mundin))
     forM_ (lines mundo) $ \linea -> do
+=======
+    mundo <- leerArchivo "invalido_sintaxis.txt"
+--    let mundin = vaciarInfo mundo
 
-        putStrLn ( imprimir ( head (leerLineaArchivo linea)) )
+--    putStrLn(show (snd mundin))
+--    forM_ (lines mundo) $ \linea -> do
+>>>>>>> 08f1b71f9834a1ea6534c1d07bd2df320621084a
+
+--        putStrLn ( imprimir ( head (leerLineaArchivo linea)) )
+        
+        -- Invocamos leerMundo que valida sintaxis y semántica automáticamente
+    case leerMundo mundo of
+        Left errores -> do
+            putStrLn "¡Se encontraron errores en el archivo del mundo!"
+            -- Imprimimos todos los errores acumulados (V1 a V10)
+            mapM_ print errores
+            
+        Right mundoValido -> do
+            putStrLn "¡Mundo cargado y validado exitosamente!"
+            -- Aquí puedes mostrar los datos del mundo o iniciar el juego con el prompt
+            print mundoValido
         
