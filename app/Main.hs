@@ -30,27 +30,7 @@ promt = do
         
             
 
-type ID_Sala = String
-type ID_Objeto = String
-type Desc = String
 
-
-data Cabecera = Cabecera String ID_Sala String deriving (Show, Eq)
-
-data Objeto = Objeto ID_Objeto Desc deriving (Show, Eq)
-data Bloque_Objetos = Bloque_Objetos [Objeto] deriving (Show, Eq)
-
-
-data Sala = Sala ID_Sala Desc [Salida] [ID_Objeto] deriving (Show, Eq)
-data Salida = Salida String deriving (Show, Eq)
--- data Salida = Salida_libre String ID_Sala | Salida_compleja String ID_Sala ID_Objeto deriving (Show, Eq, Read)
-data Bloque_Salas = Bloque_Salas [Sala] deriving (Show, Eq)
-
-data Mundo = Mundo{
-    cabecera :: Cabecera,
-    objetos :: Bloque_Objetos,
-    salas :: Bloque_Salas
-} deriving (Show, Eq)
 
 
 
@@ -154,8 +134,7 @@ vaciarInfo mundin =
     salas = convertirBloque_Salas ( proceso1Sala ( (sacarSalas (miniSacarSalas lineasParse), []) ))
 })
 
--- mostrameElMundo :: Mundo -> String
--- mostrameElMundo m = 
+
 
 data Coso = Coso {
     cs :: Int,
@@ -170,6 +149,8 @@ func s = Mini
     ) 
     "" 
  
+instance Show Cabecera where
+    showsPrec _ = show Cabecera
 
 main :: IO ()
 main = do
@@ -182,7 +163,7 @@ main = do
 
     mundo <- leerArchivo "entrega.txt"
     let mundin = vaciarInfo mundo
-
+    putStrLn ( show (Cabecera "hola" "hola" "hola"))
     putStrLn(show (snd mundin))
     forM_ (lines mundo) $ \linea -> do
 

@@ -1,12 +1,15 @@
 module Motor.Tipos (
     Comando (..),
-    -- Objeto (..),
-    -- Direccion (..),
-    -- Sala (..),
-    IdSala,
-    -- Mundo,
-    -- Meta (..),
-    -- Estado (..),
+    ID_Sala,
+    ID_Objeto,
+    Desc,
+    Cabecera (..),
+    Objeto (..),
+    Bloque_Objetos (..),
+    Sala (..),
+    Salida (..),
+    Bloque_Salas (..),
+    Mundo (..),
     ErrorMundo (..),
     LineaParseada (..)
 ) where
@@ -19,44 +22,27 @@ data Comando = Comando {
     arg1 :: String
 } deriving (Show, Eq)
 
--- identificador único para cada sala del mundo
-type IdSala = String
+type ID_Sala = String
+type ID_Objeto = String
+type Desc = String
 
--- representa un objeto interactuable dentro del juego
--- data Objeto = Objeto {
---     nombreObj :: String,
---     descObj   :: String
--- } deriving (Show, Eq)
 
--- direcciones posibles para los desplazamientos
--- data Direccion = Norte | Sur | Este | Oeste | Arriba | Abajo
---     deriving (Show, Eq, Read)
+data Cabecera = Cabecera String ID_Sala String deriving (Show, Eq)
 
--- estructura de una sala con su descripción, salidas y objetos presentes
--- data Sala = Sala {
---     descSala    :: String,
---     salidas     :: M.Map Direccion IdSala,
---     objetosSala :: [Objeto]
--- } deriving (Show, Eq)
+data Objeto = Objeto ID_Objeto Desc deriving (Show, Eq)
+data Bloque_Objetos = Bloque_Objetos [Objeto] deriving (Show, Eq)
 
--- el mundo del juego representado como un mapa de identificadores a salas para prevenir que existan dos salas con el mismo
--- identificador
--- type Mundo = M.Map IdSala Sala
 
--- representa la meta del juego (para cumplir con: llegar a <sala> o llevar <objeto> a <sala>)
--- data Meta = LlegarA IdSala
---           | LlevarA IdSala String
---     deriving (Show, Eq)
+data Sala = Sala ID_Sala Desc [Salida] [ID_Objeto] deriving (Show, Eq)
+data Salida = Salida String deriving (Show, Eq)
+-- data Salida = Salida_libre String ID_Sala | Salida_compleja String ID_Sala ID_Objeto deriving (Show, Eq, Read)
+data Bloque_Salas = Bloque_Salas [Sala] deriving (Show, Eq)
 
--- estado global de la partida requerido
--- data Estado = Estado {
---     tituloMundo :: String,
---     salaActual  :: IdSala,   -- al inicio es la sala donde empieza
---     inventario  :: [Objeto],
---     mundoActual :: Mundo,
---     juegoActivo :: Bool,
---     metaJuego   :: Meta
--- } deriving (Show, Eq)
+data Mundo = Mundo{
+    cabecera :: Cabecera,
+    objetos :: Bloque_Objetos,
+    salas :: Bloque_Salas
+} deriving (Show, Eq)
 
 -- representa los diferentes errores posibles al validar el mundo (V1 a V10)/ bajo observacion
 data ErrorMundo = ErrorSintaxis Int String
