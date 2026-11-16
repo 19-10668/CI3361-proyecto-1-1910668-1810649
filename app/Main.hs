@@ -106,7 +106,7 @@ main = do
     -- promt
     
 
-    mundo <- leerArchivo "invalido_sintaxis.txt"
+    mundo <- leerArchivo "invalido_semantica.txt"
 --    let mundin = vaciarInfo mundo
 
 --    putStrLn(show (snd mundin))
