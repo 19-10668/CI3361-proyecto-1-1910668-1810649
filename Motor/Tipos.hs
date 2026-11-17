@@ -9,7 +9,8 @@ module Motor.Tipos (
     Meta (..),
     Bloque_Objetos (..), 
     Bloque_Salas (..),
-    Mundo (..),    
+    Mundo (..),
+    Estado(..),    
     -- Estado (..),
     ErrorMundo (..),
     LineaParseada (..),
@@ -71,7 +72,11 @@ data Sala = Sala ID_Sala Desc [Salida] [ID_Objeto] deriving (Show, Eq)
 -- data Salida = Salida_libre String ID_Sala | Salida_compleja String ID_Sala ID_Objeto deriving (Show, Eq, Read)
 data Bloque_Salas = Bloque_Salas [Sala] deriving (Show, Eq)
 
-
+data Estado = Estado {
+    current:: ID_Sala,
+    inventario:: [Objeto],
+    capacidad:: Int
+} deriving (Show, Eq)
 
 
 -- representa los diferentes errores posibles al validar el mundo (V1 a V10)/ bajo observacion
