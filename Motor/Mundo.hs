@@ -32,7 +32,7 @@ leerMundo contenido =
                 then Left erroresSemanticos
                 else Right mundoConstruido
                 
---- Lógica de Construcción ---
+--- Lógica de Construcción
 
 aux :: LineaParseada -> String
 aux (LClave k v) = k
@@ -92,8 +92,6 @@ convertirObjeto (obj:desc:xs) = [Objeto (sacarValor obj) (sacarValor desc)] ++ c
 convertirBloque_Objetos :: [LineaParseada] -> Bloque_Objetos
 convertirBloque_Objetos l = Bloque_Objetos (convertirObjeto l)
 
-
-
 primeropSalaYDesc:: [LineaParseada] -> ([LineaParseada], String, String)
 primeropSalaYDesc [] = ([], [], [])
 primeropSalaYDesc (sala:desc:xs) =  (xs, sacarValor sala, sacarValor desc)
@@ -118,7 +116,7 @@ parsearSalida s =
         dirStr = head w
         dir = stringToDir dirStr
         destino = w !! 2
-        req = if "requiere" `elem` w
+        req = if  elem "requiere" w
               then Just (last w)
               else Nothing
     in Salida dir destino req
@@ -150,8 +148,8 @@ proceso2Sala (xs, sala, desc, salidas, obj) = (xs, Sala sala desc salidas obj)
 
 parsearMeta :: String -> Meta
 parsearMeta s 
-    | "llegar" `elem` w && length w == 3 = LlegarA (last w)
-    | "llevar" `elem` w = 
+    | elem "llegar" w && length w == 3 = LlegarA (last w)
+    | elem "llevar" w = 
         let objeto = w !! 1
             sala   = last w
         in LlevarA objeto sala
@@ -166,7 +164,7 @@ construirMundo lineasParse =
         salas    = convertirBloque_Salas (proceso1Sala (sacarSalas (miniSacarSalas lineasParse), []))
     }
 
---- Zona de Validaciones (V1 a V10) usando acumuladores de errores---
+--- Zona de Validaciones (V1 a V10) usando acumuladores de errores
 
 -- Funcion auxiliar recursiva que lleva el contador 'n' de la línea
 validarSintaxis :: Int -> [String] -> [ErrorMundo]
@@ -181,31 +179,39 @@ validarSintaxis n (linea:resto) =
            in if not (null errorMsg)
               then [ErrorSintaxis n errorMsg] ++ validarSintaxis (n + 1) resto
               else validarSintaxis (n + 1) resto
-
--- Clasifica el mensaje de error según las reglas V1
+                     
 clasificarErrorSintaxis :: String -> String
 clasificarErrorSintaxis linea
-    | not (':' `elem` linea) = "Linea sin la forma CLAVE: valor"
+    | not (elem ':' linea) = "Linea sin la forma CLAVE: valor"
     | otherwise =
         let (claveCruda, valorCrudo) = separarDosPuntos linea
             clave = trim claveCruda
             valor = trim valorCrudo
-        in if clave `notElem` ["MUNDO", "INICIO", "META", "OBJETO", "DESC", "SALA", "SALIDA"]
+        in if notElem clave ["MUNDO", "INICIO", "META", "OBJETO", "DESC", "SALA", "SALIDA"]
            then "Clave desconocida: " ++ clave
-           else if clave `elem` ["SALA", "OBJETO"] && (null valor || any isSpace valor)
+           else if elem clave ["SALA", "OBJETO"] && (null valor || any isSpace valor)
                 then "Identificador invalido: no debe contener espacios (use guion bajo '_')"
-                else if clave == "SALIDA"
+                else if clave == "META"
                      then 
-                         -- Tomamos la primera palabra del valor de la salida
                          let palabras = words valor
-                         in if null palabras 
-                            then "Salida mal formada: falta la direccion"
-                            else 
-                                -- head aqui tampoco falla, pues ya verificamos que palabras no sea null
-                                case stringToDir (head palabras) of
-                                    Nothing -> "Direccion inexistente o salida mal formada"
-                                    Just _  -> ""
-                     else ""
+                         in if null palabras || 
+                               (head palabras == "llegar" && length palabras /= 3) || 
+                               (head palabras == "llevar" && length palabras /= 4) ||
+                               notElem (head palabras) ["llegar", "llevar"]
+                            then "Meta mal formada. Use: 'META: llegar a [sala]' o 'META: llevar [objeto] a [sala]'"
+                            else ""
+                     else if clave == "SALIDA"
+                          then 
+                              -- Tomamos la primera palabra del valor de la salida
+                              let palabras = words valor
+                              in if null palabras 
+                                 then "Salida mal formada: falta la direccion"
+                                 else 
+                                     -- head aqui tampoco falla, pues ya verificamos que palabras no sea null
+                                     case stringToDir (head palabras) of
+                                         Nothing -> "Direccion inexistente o salida mal formada"
+                                         Just _  -> ""
+                          else ""
                      
 separarDosPuntos :: String -> (String, String)
 separarDosPuntos [] = ([], [])
@@ -215,15 +221,113 @@ separarDosPuntos (c:cs)
         let (clave, valor) = separarDosPuntos cs
         in (c : clave, valor)
         
-        
+-- usamos el monoide de las listas [] para acumular y encadenar todos los errores.       
 validarSemantica :: Mundo -> [ErrorMundo]
 validarSemantica mundo = 
-    -- Aquí aplicamos el concepto de Semigroup/Monoid de las listas ([])
-    validarIDsDuplicados mundo
-    <> validarReferencias mundo
+    validarIDsDuplicados mundo <> validarReferencias mundo
+
+-- V2: IDs duplicados (Salas u Objetos)
 
 validarIDsDuplicados :: Mundo -> [ErrorMundo]
-validarIDsDuplicados mundo = [] -- Ejemplo: chequear IDs repetidos con 'nub'
+validarIDsDuplicados mundo = 
+    let (Bloque_Objetos listaObjs) = objetos mundo
+        (Bloque_Salas listaSalas) = salas mundo
+        
+        idsObjs = [oID | Objeto oID _ <- listaObjs]
+        idsSalas = [sID | Sala sID _ _ _ <- listaSalas]
+        
+        duplicadosObjs = encontrarDuplicados idsObjs
+        duplicadosSalas = encontrarDuplicados idsSalas
+        
+        errsObjs = [ErrorSemantico ("Error V2: Objeto duplicado: " ++ o) | o <- duplicadosObjs]
+        errsSalas = [ErrorSemantico ("Error V2: Sala duplicada: " ++ s) | s <- duplicadosSalas]
+    in errsObjs ++ errsSalas
+
+-- V3 a V10
 
 validarReferencias :: Mundo -> [ErrorMundo]
-validarReferencias mundo = [] -- Ejemplo: chequear que las salidas apunten a salas existentes
+validarReferencias mundo = 
+    let (Bloque_Objetos listaObjs) = objetos mundo
+        (Bloque_Salas listaSalas) = salas mundo
+        
+        setObjs = [oID | Objeto oID _ <- listaObjs]
+        setSalas = [sID | Sala sID _ _ _ <- listaSalas]
+        
+        todasSalidas = [(sID, sal) | Sala sID _ sals _ <- listaSalas, sal <- sals]
+        todosObjsEnSalas = [oID | Sala _ _ _ objs <- listaSalas, oID <- objs]
+        
+        -- V3: Salidas hacia salas inexistentes
+        errV3 = [ ErrorSemantico ("Error V3: La sala '" ++ sID ++ "' apunta a una salida inexistente: '" ++ dest ++ "'")
+                | (sID, Salida _ dest _) <- todasSalidas, notElem dest setSalas ]
+                
+        -- V4: Salidas que requieren un objeto inexistente
+        errV4 = [ ErrorSemantico ("Error V4: Salida en '" ++ sID ++ "' requiere el objeto inexistente: '" ++ req ++ "'")
+                | (sID, Salida _ _ (Just req)) <- todasSalidas, notElem req setObjs ]
+                
+        -- V5: Sala con dos salidas en la misma dirección
+        errV5 = [ ErrorSemantico ("Error V5: La sala '" ++ sID ++ "' tiene múltiples salidas en la dirección " ++ show dir)
+                | Sala sID _ sals _ <- listaSalas
+                , let dirs = [d | Salida (Just d) _ _ <- sals]
+                , dir <- encontrarDuplicados dirs ]
+                
+        -- V6: Sala que contiene un objeto no definido globalmente
+        errV6 = [ ErrorSemantico ("Error V6: La sala '" ++ sID ++ "' contiene el objeto no definido: '" ++ oID ++ "'")
+                | Sala sID _ _ objs <- listaSalas, oID <- objs, notElem oID setObjs ]
+                
+        -- V7: Objeto colocado en más de una sala (o repetido en la misma)
+        dupsObjetosSalas = encontrarDuplicados todosObjsEnSalas
+        errV7 = [ ErrorSemantico ("Error V7: El objeto '" ++ oID ++ "' está colocado en más de una sala o repetido.")
+                | oID <- dupsObjetosSalas ]
+                
+        -- V8: INICIO o META con sala u objeto inexistentes
+        Cabecera _ iniMeta metaDef = cabecera mundo
+        errInicio = [ErrorSemantico ("Error V8: La sala INICIO '" ++ iniMeta ++ "' no existe.") | notElem iniMeta setSalas]
+        errMeta = case metaDef of
+            LlegarA mSala -> [ErrorSemantico ("Error V8: La sala META '" ++ mSala ++ "' no existe.") | notElem mSala  setSalas]
+            LlevarA mObj mSala -> 
+                [ErrorSemantico ("Error V8: El objeto META '" ++ mObj ++ "' no existe.") | notElem mObj setObjs]
+                ++ [ErrorSemantico ("Error V8: La sala META '" ++ mSala ++ "' no existe.") | notElem mSala setSalas]
+                
+        -- V9: Sala no alcanzable desde INICIO (ignorando requisitos de objetos)
+        alcancibles = bfs [iniMeta] (grafoAdyacencia listaSalas) [iniMeta]
+        errV9 = [ ErrorSemantico ("Error V9: La sala '" ++ sID ++ "' no es alcanzable desde INICIO.")
+                | sID <- setSalas, notElem sID alcancibles ]
+                
+        -- V10: Objeto necesario (meta o requisito de salida) pero no colocado en ninguna sala
+        objsNecesarios = [req | (_, Salida _ _ (Just req)) <- todasSalidas] ++ 
+                         case metaDef of { LlevarA mObj _ -> [mObj]; _ -> [] }
+        errV10 = [ ErrorSemantico ("Error V10: El objeto '" ++ oID ++ "' es necesario pero no está colocado en ninguna sala.")
+                 | oID <- objsNecesarios
+                 , notElem oID todosObjsEnSalas ]
+
+    in errV3 <> errV4 <> errV5 <> errV6 <> errV7 <> errInicio <> errMeta <> errV9 <> errV10
+
+-- Encuentra elementos duplicados en una lista
+encontrarDuplicados :: Eq a => [a] -> [a]
+encontrarDuplicados [] = []
+encontrarDuplicados (x:xs)
+    | elem x xs = x : encontrarDuplicados (filter (/= x) xs)
+    | otherwise   = encontrarDuplicados xs
+
+-- grafo contruido con listas donde cada casilla-sala tendra a sus vecinos-salidas en otra lista asociada
+type Grafo = [(String, [String])]
+
+-- Construye un grafo de adyacencia de salas a partir de las salidas. Por cada sala, arma una tupla
+grafoAdyacencia :: [Sala] -> Grafo
+grafoAdyacencia salas = 
+    [ (sID, [dest | Salida _ dest _ <- sals]) | Sala sID _ sals _ <- salas ]
+
+-- Busqueda en anchura (BFS) para calcular salas alcanzables (V9)
+bfs :: [String] -> Grafo -> [String] -> [String]
+bfs [] _ visitados = visitados
+-- xs es lo que esta pendiente
+bfs (x:xs) grafo visitados
+    | elem x visitados = bfs xs grafo visitados
+    | otherwise = 
+    -- Busca en el grafo la tupla correspondiente al nodo x
+        let vecinos = case lookup x grafo of
+                        Nothing -> []
+                        Just v  -> v
+            -- Filtramos los que ya visitamos o los que ya están en la cola de pendientes
+            nuevos = filter (\v -> notElem v visitados && notElem v xs) vecinos
+        in bfs (xs ++ nuevos) grafo (visitados ++ [x])

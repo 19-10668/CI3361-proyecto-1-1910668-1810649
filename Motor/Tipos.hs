@@ -43,7 +43,7 @@ data Bloque_Objetos = Bloque_Objetos [Objeto] deriving (Show, Eq)
 
 -- representa la meta del juego (para cumplir con: llegar a <sala> o llevar <objeto> a <sala>)
 data Meta = LlegarA ID_Sala
-           | LlevarA ID_Sala String
+           | LlevarA ID_Objeto ID_Sala
      deriving (Show, Eq)
 
 data Mundo = Mundo{
