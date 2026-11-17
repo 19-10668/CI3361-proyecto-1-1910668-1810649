@@ -7,6 +7,7 @@ import Motor.Reconocedor
 import Data.Char 
 import Data.List (nub)
 import Control.Monad (forM, forM_)
+import System.IO.Unsafe
 
 -- Función principal exigida por el proyecto
 leerMundo :: String -> Either [ErrorMundo] Mundo
@@ -24,15 +25,28 @@ leerMundo contenido =
                 lineasParseadas = map sacarLineaP (map leerLineaArchivo lineasCrudas)
                 
                 mundoConstruido = construirMundo lineasParseadas
+                -- Extraemos los IDs de los objetos que están guardados en el inventario del archivo
+                invEnArchivo = concat [words v | LClave "INVENTARIO" v <- lineasParseadas, map toLower v /= "vacio"]
                 
                 -- Validamos la semantica (V2 a V10)
-                erroresSemanticos = validarSemantica mundoConstruido
+                erroresSemanticos = validarSemantica mundoConstruido invEnArchivo
             in
                 if not (null erroresSemanticos)
                 then Left erroresSemanticos
                 else Right mundoConstruido
-                
---- Lógica de Construcción
+     
+{-- Función modificada para saltarse las validaciones e inspeccionar el parser directamente
+leerMundo :: String -> Either [ErrorMundo] Mundo
+leerMundo contenido =  
+    let lineasCrudas = lines contenido
+        -- Opcional: puedes dejar la sintaxis básica, o parsear directo
+        lineasParseadas = map sacarLineaP (map leerLineaArchivo lineasCrudas)
+        
+        -- Construimos el mundo directamente sin importar si hay errores semánticos o de V9
+        mundoConstruido = construirMundo lineasParseadas
+    in 
+        Right mundoConstruido --  Forzamos que siempre devuelva el mundo parseado con éxito
+--- Lógica de Construcción-}
 
 aux :: LineaParseada -> String
 aux (LClave k v) = k
@@ -42,12 +56,14 @@ aux (LVacia) = "vacia"
 sacarValor :: LineaParseada -> String
 sacarValor (LClave k v) = v
 
-sacarCabecera :: [LineaParseada] -> [LineaParseada] -- esto tiene que tenber ecactamente 3 valores
+sacarCabecera :: [LineaParseada] -> [LineaParseada] 
 sacarCabecera [] = []
 sacarCabecera (x:xs) 
     | aux x == "MUNDO" = [x] ++ sacarCabecera xs
     | aux x == "INICIO" = [x] ++ sacarCabecera xs
     | aux x == "META" = [x] ++ sacarCabecera xs
+    | aux x == "CAPACIDAD" = [x] ++ sacarCabecera xs
+    | aux x == "INVENTARIO" = sacarCabecera xs -- Ignoramos la linea de inventario en la cabecera del mundo
     | aux x == "separador" || aux x == "vacia" = [] ++ sacarCabecera xs
     | otherwise = []
 
@@ -55,11 +71,12 @@ sacarCabecera (x:xs)
 sacarObjetos :: [LineaParseada] -> [LineaParseada]
 sacarObjetos [] = []
 sacarObjetos (x:xs)
-    | aux x == "OBJETO" = [x] ++ sacarObjetos xs
-    | aux x == "DESC" = [x] ++ sacarObjetos xs
-    | aux x == "separador" || aux x == "vacia" || aux x == "MUNDO" || aux x == "INICIO" || aux x == "META" = [] ++ sacarObjetos xs
-    | otherwise = []
-
+    | aux x == "OBJETO" = x : sacarObjetos xs
+    | aux x == "DESC"   = x : sacarObjetos xs
+    | aux x == "PESO"   = x : sacarObjetos xs
+    | aux x `elem` ["separador", "vacia", "MUNDO", "INICIO", "META", "CAPACIDAD", "INVENTARIO"] = sacarObjetos xs
+    | otherwise = [] -- Se detiene al llegar al primer "SALA"
+    
 miniSacarSalas :: [LineaParseada] -> [LineaParseada]
 miniSacarSalas (x:xs)
     | aux x == "SALA" = [x] ++ xs 
@@ -78,16 +95,40 @@ sacarSalas (x:xs)
 --convertirCab :: [LineaParseada] -> Cabecera 
 --convertirCab (mundo:inicio:meta:xs) = Cabecera (sacarValor mundo) (sacarValor inicio) (sacarValor meta)
 
-convertirCab :: [LineaParseada] -> Cabecera 
-convertirCab (mundo:inicio:meta:xs) = 
+
+{-convertirCab :: [LineaParseada] -> Cabecera 
+convertirCab (mundo:inicio:meta:capacidadLine:xs) = 
     Cabecera 
         (sacarValor mundo) 
         (sacarValor inicio) 
-        (parsearMeta (sacarValor meta)) 
+        (parsearMeta (sacarValor meta))
+        (read (sacarValor capacidadLine))-}
+
+-- esto es por si el archivo no trae capacidad
+convertirCab :: [LineaParseada] -> Cabecera 
+convertirCab lineas = 
+    let mundoVal  = case [v | LClave "MUNDO" v <- lineas] of (x:_) -> x; [] -> ""
+        inicioVal = case [v | LClave "INICIO" v <- lineas] of (x:_) -> x; [] -> ""
+        metaVal   = case [v | LClave "META" v <- lineas] of (x:_) -> parsearMeta x; [] -> LlegarA ""
+        capVal    = case [v | LClave "CAPACIDAD" v <- lineas] of 
+                      (x:_) -> case reads x of [(n, "")] -> n; _ -> 10
+                      []    -> 10 -- Capacidad por defecto si el archivo no la trae
+    in Cabecera mundoVal inicioVal metaVal capVal
+
+--convertirObjeto :: [LineaParseada] -> [Objeto]
+--convertirObjeto [] = []
+--convertirObjeto (obj:desc:xs) = [Objeto (sacarValor obj) --(sacarValor desc)] ++ convertirObjeto xs
 
 convertirObjeto :: [LineaParseada] -> [Objeto]
 convertirObjeto [] = []
-convertirObjeto (obj:desc:xs) = [Objeto (sacarValor obj) (sacarValor desc)] ++ convertirObjeto xs
+convertirObjeto (LClave "OBJETO" idObj : LClave "DESC" d : LClave "PESO" pStr : xs) =
+    let p = case reads (trim pStr) of
+                [(n, "")] -> n
+                _         -> 1
+    in Objeto idObj d p : convertirObjeto xs
+convertirObjeto (LClave "OBJETO" idObj : LClave "DESC" d : xs) =
+    Objeto idObj d 1 : convertirObjeto xs
+convertirObjeto (_:xs) = convertirObjeto xs
 
 convertirBloque_Objetos :: [LineaParseada] -> Bloque_Objetos
 convertirBloque_Objetos l = Bloque_Objetos (convertirObjeto l)
@@ -115,9 +156,9 @@ parsearSalida s =
     -- asi que words da aunque sea algo (la direccion)
         dirStr = head w
         dir = stringToDir dirStr
-        destino = w !! 2
+        destino = trim (w !! 2)
         req = if  elem "requiere" w
-              then Just (last w)
+              then Just (trim (last w))
               else Nothing
     in Salida dir destino req
 
@@ -187,32 +228,38 @@ clasificarErrorSintaxis linea
         let (claveCruda, valorCrudo) = separarDosPuntos linea
             clave = trim claveCruda
             valor = trim valorCrudo
-        in if notElem clave ["MUNDO", "INICIO", "META", "OBJETO", "DESC", "SALA", "SALIDA"]
+        in if notElem clave ["MUNDO", "INICIO", "META", "OBJETO", "DESC", "SALA", "SALIDA", "CAPACIDAD", "PESO", "INVENTARIO"]
            then "Clave desconocida: " ++ clave
            else if elem clave ["SALA", "OBJETO"] && (null valor || any isSpace valor)
                 then "Identificador invalido: no debe contener espacios (use guion bajo '_')"
-                else if clave == "META"
-                     then 
-                         let palabras = words valor
-                         in if null palabras || 
-                               (head palabras == "llegar" && length palabras /= 3) || 
-                               (head palabras == "llevar" && length palabras /= 4) ||
-                               notElem (head palabras) ["llegar", "llevar"]
-                            then "Meta mal formada. Use: 'META: llegar a [sala]' o 'META: llevar [objeto] a [sala]'"
-                            else ""
-                     else if clave == "SALIDA"
-                          then 
-                              -- Tomamos la primera palabra del valor de la salida
-                              let palabras = words valor
-                              in if null palabras 
-                                 then "Salida mal formada: falta la direccion"
-                                 else 
-                                     -- head aqui tampoco falla, pues ya verificamos que palabras no sea null
-                                     case stringToDir (head palabras) of
-                                         Nothing -> "Direccion inexistente o salida mal formada"
-                                         Just _  -> ""
+                else if clave == "CAPACIDAD" || clave == "PESO"
+                     then if null valor || not (all isDigit valor) || read valor <= 0
+                          then "Valor invalido: debe ser un entero positivo"
                           else ""
-                     
+                     else if clave == "INVENTARIO"
+                 then if null valor then "Valor invalido: inventario vacio" else ""
+                     else if clave == "META"
+                          then 
+                              let palabras = words valor
+                              -- head aqui tampoco falla, pues ya verificamos que palabras no sea null
+                              in if null palabras || 
+                                    (head palabras == "llegar" && length palabras /= 3) || 
+                                    (head palabras == "llevar" && length palabras /= 4) ||
+                                    notElem (head palabras) ["llegar", "llevar"]
+                                 then "Meta mal formada. Use: 'META: llegar a [sala]' o 'META: llevar [objeto] a [sala]'"
+                                 else ""
+                          else if clave == "SALIDA"
+                               then
+                               -- Tomamos la primera palabra del valor de la salida    
+                                   let palabras = words valor
+                                   in if null palabras 
+                                      then "Salida mal formada: falta la direccion"
+                                      else 
+                                          case stringToDir (head palabras) of
+                                              Nothing -> "Direccion inexistente o salida mal formada"
+                                              Just _  -> ""
+                               else ""
+                 
 separarDosPuntos :: String -> (String, String)
 separarDosPuntos [] = ([], [])
 separarDosPuntos (c:cs)
@@ -222,9 +269,9 @@ separarDosPuntos (c:cs)
         in (c : clave, valor)
         
 -- usamos el monoide de las listas [] para acumular y encadenar todos los errores.       
-validarSemantica :: Mundo -> [ErrorMundo]
-validarSemantica mundo = 
-    validarIDsDuplicados mundo <> validarReferencias mundo
+validarSemantica :: Mundo -> [String] -> [ErrorMundo]
+validarSemantica mundo invArchivo = 
+    validarIDsDuplicados mundo <> validarReferencias mundo invArchivo
 
 -- V2: IDs duplicados (Salas u Objetos)
 
@@ -233,7 +280,7 @@ validarIDsDuplicados mundo =
     let (Bloque_Objetos listaObjs) = objetos mundo
         (Bloque_Salas listaSalas) = salas mundo
         
-        idsObjs = [oID | Objeto oID _ <- listaObjs]
+        idsObjs = [oID | Objeto oID _ _<- listaObjs]
         idsSalas = [sID | Sala sID _ _ _ <- listaSalas]
         
         duplicadosObjs = encontrarDuplicados idsObjs
@@ -245,12 +292,13 @@ validarIDsDuplicados mundo =
 
 -- V3 a V10
 
-validarReferencias :: Mundo -> [ErrorMundo]
-validarReferencias mundo = 
+validarReferencias :: Mundo -> [String] -> [ErrorMundo]
+validarReferencias mundo  invArchivo = 
     let (Bloque_Objetos listaObjs) = objetos mundo
         (Bloque_Salas listaSalas) = salas mundo
+        maxCap = capMax (cabecera mundo)
         
-        setObjs = [oID | Objeto oID _ <- listaObjs]
+        setObjs = [oID | Objeto oID _ _ <- listaObjs]
         setSalas = [sID | Sala sID _ _ _ <- listaSalas]
         
         todasSalidas = [(sID, sal) | Sala sID _ sals _ <- listaSalas, sal <- sals]
@@ -280,27 +328,50 @@ validarReferencias mundo =
                 | oID <- dupsObjetosSalas ]
                 
         -- V8: INICIO o META con sala u objeto inexistentes
-        Cabecera _ iniMeta metaDef = cabecera mundo
+        Cabecera _ iniMeta metaDef _ = cabecera mundo
         errInicio = [ErrorSemantico ("Error V8: La sala INICIO '" ++ iniMeta ++ "' no existe.") | notElem iniMeta setSalas]
         errMeta = case metaDef of
             LlegarA mSala -> [ErrorSemantico ("Error V8: La sala META '" ++ mSala ++ "' no existe.") | notElem mSala  setSalas]
-            LlevarA mObj mSala -> 
+            LlevarA mObj mSala ->  
                 [ErrorSemantico ("Error V8: El objeto META '" ++ mObj ++ "' no existe.") | notElem mObj setObjs]
                 ++ [ErrorSemantico ("Error V8: La sala META '" ++ mSala ++ "' no existe.") | notElem mSala setSalas]
                 
+        -- Extraemos la sala destino de la META (funciona tanto para LlegarA como para LlevarA)
+        metaSala = case metaDef of
+            LlegarA mS -> mS
+            LlevarA _ mS -> mS
+                
         -- V9: Sala no alcanzable desde INICIO (ignorando requisitos de objetos)
-        alcancibles = bfs [iniMeta] (grafoAdyacencia listaSalas) [iniMeta]
+        alcancibles = bfs [iniMeta] (grafoAdyacencia listaSalas) []
         errV9 = [ ErrorSemantico ("Error V9: La sala '" ++ sID ++ "' no es alcanzable desde INICIO.")
                 | sID <- setSalas, notElem sID alcancibles ]
+--        dbg1 = unsafePerformIO (print ("SALAS ALCANCIBLES: " ++ show alcancibles))
+--        dbg2 = unsafePerformIO (print ("SALA META BUSCADA: " ++ show metaSala))
+--        dbg3 = unsafePerformIO (print ("GRAFO COMPLETO: " ++ show (grafoAdyacencia listaSalas)))
+
+--        errV9 = [ ErrorSemantico ("Error V9: La sala META '" ++ metaSala ++ "' no es alcanzable desde INICIO.")
+--                | notElem metaSala alcancibles ]
+
                 
-        -- V10: Objeto necesario (meta o requisito de salida) pero no colocado en ninguna sala
+        -- V10: Un objeto es válido si está en una sala O si lo lleva el jugador en el inventario guardado
         objsNecesarios = [req | (_, Salida _ _ (Just req)) <- todasSalidas] ++ 
                          case metaDef of { LlevarA mObj _ -> [mObj]; _ -> [] }
         errV10 = [ ErrorSemantico ("Error V10: El objeto '" ++ oID ++ "' es necesario pero no está colocado en ninguna sala.")
                  | oID <- objsNecesarios
-                 , notElem oID todosObjsEnSalas ]
+                 , notElem oID todosObjsEnSalas
+                 , notElem oID invArchivo -- Tampoco lo tiene el jugador en el inventario
+                 ]
+        
+        errPesoObjs = [ ErrorSemantico ("Error Peso: El objeto '" ++ oID ++ "' pesa " ++ show p ++ " y supera la capacidad maxima de la cabecera (" ++ show maxCap ++ ")")
+                      | Objeto oID _ p <- listaObjs, p > maxCap ]
+                      
+        pesoInvArchivo = sum [p | Objeto oID _ p <- listaObjs, elem oID invArchivo]
+        errCapacidadInv = [ ErrorSemantico ("Error Capacidad: El peso total del inventario guardado (" ++ show pesoInvArchivo ++ ") supera la capacidad maxima (" ++ show maxCap ++ ").")
+                          | pesoInvArchivo > maxCap ]
+                      
+      in errV3 <> errV4 <> errV5 <> errV6 <> errV7 <> errInicio <> errMeta <> errV9 <> errV10 <> errPesoObjs <> errCapacidadInv
+--    in dbg1 `seq` dbg2 `seq` dbg3 `seq` (errV3 <> errV4 <> errV5 <> errV6 <> errV7 <> errInicio <> errMeta <> errV9 <> errV10 <> errPesoObjs)
 
-    in errV3 <> errV4 <> errV5 <> errV6 <> errV7 <> errInicio <> errMeta <> errV9 <> errV10
 
 -- Encuentra elementos duplicados en una lista
 encontrarDuplicados :: Eq a => [a] -> [a]

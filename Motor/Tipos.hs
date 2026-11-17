@@ -11,7 +11,6 @@ module Motor.Tipos (
     Bloque_Salas (..),
     Mundo (..),
     Estado(..),    
-    -- Estado (..),
     ErrorMundo (..),
     LineaParseada (..),
     Cabecera (..),
@@ -29,15 +28,16 @@ data Comando = Comando {
 
 -- identificador único para cada sala del mundo
 type ID_Sala = String
+
 type ID_Objeto = String
 type Desc = String
-
+type Peso = Int
 
 -- direcciones posibles para los desplazamientos
 data Direccion = Norte | Sur | Este | Oeste | Arriba | Abajo
      deriving (Show, Eq, Read)
 
-data Objeto = Objeto ID_Objeto Desc deriving (Show, Eq)
+data Objeto = Objeto ID_Objeto Desc Peso deriving (Show, Eq)
 data Bloque_Objetos = Bloque_Objetos [Objeto] deriving (Show, Eq)
 
 
@@ -61,7 +61,8 @@ data Salida = Salida {
 data Cabecera = Cabecera {
     tituloMundo :: String,
     salaInicio  :: ID_Sala,
-    metaMundo   :: Meta
+    metaMundo   :: Meta,
+    capMax      :: Int
 } deriving (Show, Eq)
 
 

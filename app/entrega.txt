@@ -4,21 +4,27 @@
 MUNDO: Entrega a última hora
 INICIO: estacionamiento
 META: llevar proyecto_impreso a oficina_del_profesor
+CAPACIDAD: 10
 ---
 OBJETO: carnet
 DESC: Tu carnet estudiantil. La foto es de primer año y no te pareces.
+PESO: 34
 ---
 OBJETO: moneda
 DESC: Una moneda. No alcanza para nada, pero brilla bonito.
+PESO: 3
 ---
 OBJETO: memoria_usb
 DESC: Una memoria con el archivo proyecto_final_FINAL_v3.pdf.
+PESO: 3
 ---
 OBJETO: llave_del_ascensor
 DESC: La llave del ascensor de servicio, con un llavero de Kyubey.
+PESO: 3
 ---
 OBJETO: proyecto_impreso
 DESC: Tu proyecto impreso, todavía tibio.
+PESO: 3
 ---
 SALA: estacionamiento
 DESC: El estacionamiento de Básico. Son las 11:40 y la entrega es a las 12:00.

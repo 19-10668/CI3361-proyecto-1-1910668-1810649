@@ -35,21 +35,37 @@ mostrarSala mn id =
 
 buscarObjeto::  Mundo -> Int -> Estado -> ID_Objeto -> Objeto
 buscarObjeto mn cual es id
-    | cual == 1 = foldl (foldObjeto) (Objeto id "No existe tal objeto") ((\(Bloque_Objetos x) -> x) (objetos mn))
-    | cual == 2 = foldl (foldObjeto) (Objeto id "No existe tal objeto") ((\(Bloque_Objetos x) -> x) (objetos mn) ++ (inventario es))
-    | cual == 3 = foldl (foldObjeto) (Objeto id "No existe tal objeto") ((inventario es))
+    | cual == 1 = foldl (foldObjeto) (Objeto id "No existe tal objeto" 1) ((\(Bloque_Objetos x) -> x) (objetos mn))
+    | cual == 2 = foldl (foldObjeto) (Objeto id "No existe tal objeto" 1) ((\(Bloque_Objetos x) -> x) (objetos mn) ++ (inventario es))
+    | cual == 3 = foldl (foldObjeto) (Objeto id "No existe tal objeto" 1) ((inventario es))
 
 
 
 mostrarObjeto:: Mundo -> ID_Objeto -> Int -> Estado -> String
-mostrarObjeto mn id cual es = (\(Objeto id d)-> d) (buscarObjeto mn cual es id )
+mostrarObjeto mn id cual es = (\(Objeto id d _)-> d) (buscarObjeto mn cual es id )
 
 
-buscarSalida:: Sala -> Direccion -> ID_Sala
-buscarSalida mn dir = salaDestino (foldl (foldSalida) (Salida {dirSalida = Just dir, salaDestino = "", reqObjeto = Just ""}) ((\(Sala a b c d) ->c)mn))
+--buscarSalida:: Sala -> Direccion -> ID_Sala
+--buscarSalida mn dir = salaDestino (foldl (foldSalida) (Salida {dirSalida = Just dir, salaDestino = "", reqObjeto = Just ""}) ((\(Sala a b c d) ->c)mn))
+--buscarSalida aplicaba salaDestino (...) por fuera del foldl, devolviendo únicamente el nombre de la sala destino
+buscarSalida :: Sala -> Direccion -> Salida
+buscarSalida mn dir = foldl (foldSalida) (Salida {dirSalida = Just dir, salaDestino = "", reqObjeto = Nothing}) ((\(Sala a b c d) -> c) mn)
 
-escogerSalida :: Mundo -> ID_Sala -> Direccion -> Estado -> Estado
-escogerSalida mn sala dir es = Estado {current = (buscarSalida (buscarSala mn sala) dir), inventario = inventario es, capacidad = capacidad es}
+--escogerSalida :: Mundo -> ID_Sala -> Direccion -> Estado -> Estado
+--escogerSalida mn sala dir es = Estado {current = (buscarSalida (buscarSala mn sala) dir), inventario = inventario es, capacidad = capacidad es}
+
+escogerSalida :: Mundo -> ID_Sala -> Direccion -> Estado -> (Estado, String)
+escogerSalida mn sala dir es =
+    let sal = buscarSalida (buscarSala mn sala) dir
+        destino = salaDestino sal
+        idsInv = [oID | Objeto oID _ _ <- inventario es]
+    in if destino == ""
+       then (es, "No hay salida en esa direccion.")
+       else case reqObjeto sal of
+              Nothing -> (es {current = destino}, "Avanzas hacia " ++ destino ++ ".")
+              Just req -> if elem req idsInv
+                          then (es {current = destino}, "Usas '" ++ req ++ "' y avanzas hacia " ++ destino ++ ".")
+                          else (es, "Salida bloqueada. Necesitas: " ++ req ++ ".")
 
 str2Dir:: String -> Direccion
 str2Dir s 
@@ -60,11 +76,27 @@ str2Dir s
     | s == "arriba" = Arriba
     | s == "abajo" = Abajo
 
-tomar:: Mundo -> ID_Objeto -> Estado ->(Mundo, Estado)
-tomar mn id es = (Mundo {
-    cabecera = cabecera mn,
-    objetos = objetos mn,
-    salas = (tomarPoner (salas mn) mn (current es) es id)}, es {inventario = (inventario es) ++ [buscarObjeto mn 1 es id]})
+pesoTotal :: [Objeto] -> Int
+pesoTotal objs = sum [p | Objeto _ _ p <- objs]
+
+
+tomar :: Mundo -> ID_Objeto -> Estado -> (Mundo, Estado, String)
+tomar mn id es = 
+    let salaActual = buscarSala mn (current es)
+        objetosEnSala = (\(Sala _ _ _ objs) -> objs) salaActual
+    in if not (elem id objetosEnSala)
+       then (mn, es, "Ese objeto no esta en la sala.")
+       else 
+           let obj = buscarObjeto mn 1 es id
+               (Objeto _ _ pesoObj) = obj
+               pesoActual = pesoTotal (inventario es)
+           in if pesoActual + pesoObj > capacidad es
+              then (mn, es, "No puedes llevar tanto peso (capacidad maxima: " ++ show (capacidad es) ++ ").")
+              else (Mundo {
+                       cabecera = cabecera mn,
+                       objetos = objetos mn,
+                       salas = tomarPoner (salas mn) mn (current es) es id
+                   }, es {inventario = inventario es ++ [obj]}, "Has tomado: " ++ id)
 
 tomarPoner:: Bloque_Salas -> Mundo -> ID_Sala -> Estado -> ID_Objeto -> Bloque_Salas
 tomarPoner (Bloque_Salas salas) mn id es ido=
@@ -73,7 +105,7 @@ tomarPoner (Bloque_Salas salas) mn id es ido=
         old_Desc = (\(Sala a b c d) -> b) old
         old_Salidas = (\(Sala a b c d) -> c) old
         old_objetos = (\(Sala a b c d) -> d) old
-        new_Sala = Sala old_ID_Sala old_Desc old_Salidas ( delete ( (\(Objeto n d) -> n) (buscarObjeto mn 1 es ido))  ((\(Sala a b c d)->d) (buscarSala mn (current es))))
+        new_Sala = Sala old_ID_Sala old_Desc old_Salidas ( delete ( (\(Objeto n d p) -> n) (buscarObjeto mn 1 es ido))  ((\(Sala a b c d)->d) (buscarSala mn (current es))))
     in Bloque_Salas ( (delete old salas) ++ [new_Sala] )
 
 soltar:: Mundo -> ID_Objeto -> Estado ->(Mundo, Estado)
@@ -91,77 +123,88 @@ soltarPoner (Bloque_Salas salas) mn id es ido=
         old_Desc = (\(Sala a b c d) -> b) old
         old_Salidas = (\(Sala a b c d) -> c) old
         old_objetos = (\(Sala a b c d) -> d) old
-        new_Sala = Sala old_ID_Sala old_Desc old_Salidas (old_objetos ++ [((\(Objeto n d) -> n) (buscarObjeto mn 3 es ido))])
+        new_Sala = Sala old_ID_Sala old_Desc old_Salidas (old_objetos ++ [((\(Objeto n d p) -> n) (buscarObjeto mn 3 es ido))])
     in Bloque_Salas ( (delete old salas) ++ [new_Sala] )
 
+extraerInventarioGuardado :: String -> Mundo -> [Objeto]
+extraerInventarioGuardado contenido mundo =
+    let ls = lines contenido
+        invLineas = [drop 11 l | l <- ls, take 11 l == "INVENTARIO:"]
+    in case invLineas of
+         (val:_) -> let w = words val
+                    in if null w || map toLower (head w) `elem` ["vacio", "ninguno"]
+                       then []
+                       else [buscarObjeto mundo 1 (Estado "" [] 0) idObj | idObj <- w]
+         [] -> [] -- Si la palabra clave "INVENTARIO:" no aparece en absoluto, se entiende que está vacío
 
-promt ::Mundo -> Estado-> IO ()
-promt mundo estado= do
-    putStr "> "
-    hFlush stdout
-    linea <- getLine
-    case leerComando linea of
-        Nothing -> do
+promt :: Mundo -> Estado -> IO ()
+promt mundo estado =
+    if verificarMeta mundo estado
+    then do
+       -- putStrLn (mostrarSala mundo (current estado))
+        putStrLn "*** ¡Has ganado! ***"
+    else do
+        putStr "> "
+        hFlush stdout
+        linea <- getLine
+        case leerComando linea of
+            Nothing -> do
                 putStrLn ("comando desconocido")
                 promt mundo estado
-        Just c 
-            | cmd c == "guardar" -> do
-                let txt = pasarMundo mundo estado 
-                -- putStrLn( txt )
-                escribirArchivo (arg1 c) txt
-                promt mundo estado
-            | cmd c == "cargar" -> do
-                nuevoMundo <- leerArchivo (arg1 c)
-                case leerMundo nuevoMundo of
-                    Left errores -> do
-                        putStrLn "¡Se encontraron errores en el archivo del mundo!"
-                        -- Imprimimos todos los errores acumulados (V1 a V10)
-                        mapM_ print errores
-                        promt mundo estado
-                        
-                    Right mundoValido -> do
-                        putStrLn "¡Mundo cargado y validado exitosamente!"
-                        promt mundoValido (Estado {current = (extraerInicio mundoValido), inventario = [], capacidad = 5})
-                        -- print mundoValido
-            | cmd c == "soltar" -> do
-                let tupla = (soltar mundo (arg1 c) estado)
-                promt (fst tupla) (snd tupla)
-            | cmd c == "tomar" -> do
-                let tupla = (tomar mundo (arg1 c) estado) 
-                -- putStrLn (show ( delete ( (\(Objeto n d) -> n) (buscarObjeto mundo 1 estado (arg1 c)))  ((\(Sala a b c d)->d) (buscarSala mundo (current estado)))))
-                -- putStrLn (show (fst tupla))
-                promt (fst tupla) (snd tupla) -- no va a fallr porque si no estaba mala la funcion tomar
-            | cmd c == "ir" -> do
-                promt mundo ((escogerSalida mundo (current estado) (str2Dir (arg1 c)) estado))
-            | cmd c == "examinar" -> do
-                putStrLn (mostrarObjeto mundo (arg1 c) 2 estado)
-                promt mundo estado
-            | cmd c == "inventario" -> do
-                putStrLn(show (inventario estado))
-                promt mundo estado
-            | cmd c == "mirar" -> do
-                putStrLn( mostrarSala mundo (current estado))
-                promt mundo estado
-            | cmd c == "ayuda" -> do
-                putStrLn(
-                    "ir <direccion>    | Mueve al jugador por esa salida, si existe y no está bloqueada. Las direcciones son norte, sur, este, oeste, arriba y abajo\n"++
-                    "mirar             | Describe la sala actual: su descripción, los objetos que hay y las salidas.\n" ++
-                    "tomar <objeto>    | Pasa un objeto de la sala al inventario. Sinónimo: coger.\n" ++
-                    "soltar <objeto>   | Deja un objeto del inventario en la sala actual.\n" ++
-                    "examinar <objeto> | Muestra la descripción de un objeto del inventario o de la sala.\n" ++
-                    "inventario        | Lista lo que lleva el jugador. Sinónimo: inv.\n" ++
-                    "guardar <archivo> | Guarda la partida en un archivo.\n" ++
-                    "cargar <archivo>  | Recupera una partida guardada.\n" ++
-                    "ayuda             | Muestra los comandos disponibles.\n" ++
-                    "salir             | Termina el programa.\n"
-                    )
-                promt mundo estado
-            
-            | cmd c == "salir" -> putStrLn("adiosito")
-            |otherwise -> do
-                putStrLn ("comando desconocido")
-                promt mundo estado
-
+            Just c 
+                | cmd c == "guardar" -> do
+                    let txt = pasarMundo mundo estado 
+                    escribirArchivo (arg1 c) txt
+                    promt mundo estado
+                | cmd c == "cargar" -> do
+                    nuevoMundo <- leerArchivo (arg1 c)
+                    case leerMundo nuevoMundo of
+                        Left errores -> do
+                            putStrLn "¡Se encontraron errores en el archivo del mundo!"
+                            mapM_ print errores
+                            promt mundo estado
+                        Right mundoValido -> do
+                            let invRecuperado = extraerInventarioGuardado nuevoMundo mundoValido
+                            putStrLn "¡Mundo cargado y validado exitosamente!"
+                            promt mundoValido (Estado {current = extraerInicio mundoValido, inventario = invRecuperado, capacidad = capMax (cabecera mundoValido)})
+                | cmd c == "soltar" -> do
+                    let tupla = (soltar mundo (arg1 c) estado)
+                    promt (fst tupla) (snd tupla)
+                | cmd c == "tomar" -> do
+                    let (nuevoMundo, nuevoEstado, mensaje) = tomar mundo (arg1 c) estado
+                    putStrLn mensaje
+                    promt nuevoMundo nuevoEstado
+                | cmd c == "ir" -> do
+                    let (nuevoEstado, mensaje) = escogerSalida mundo (current estado) (str2Dir (arg1 c)) estado
+                    putStrLn mensaje
+                    promt mundo nuevoEstado
+                | cmd c == "examinar" -> do
+                    putStrLn (mostrarObjeto mundo (arg1 c) 2 estado)
+                    promt mundo estado
+                | cmd c == "inventario" -> do
+                    putStrLn (show (inventario estado))
+                    promt mundo estado
+                | cmd c == "mirar" -> do
+                    putStrLn (mostrarSala mundo (current estado))
+                    promt mundo estado
+                | cmd c == "ayuda" -> do
+                    putStrLn (
+                        "ir <direccion>    | Mueve al jugador por esa salida, si existe y no está bloqueada. Las direcciones son norte, sur, este, oeste, arriba y abajo\n" ++
+                        "mirar             | Describe la sala actual: su descripción, los objetos que hay y las salidas.\n" ++
+                        "tomar <objeto>    | Pasa un objeto de la sala al inventario. Sinónimo: coger.\n" ++
+                        "soltar <objeto>   | Deja un objeto del inventario en la sala actual.\n" ++
+                        "examinar <objeto> | Muestra la descripción de un objeto del inventario o de la sala.\n" ++
+                        "inventario        | Lista lo que lleva el jugador. Sinónimo: inv.\n" ++
+                        "guardar <archivo> | Guarda la partida en un archivo.\n" ++
+                        "cargar <archivo>  | Recupera una partida guardada.\n" ++
+                        "ayuda             | Muestra los comandos disponibles.\n" ++
+                        "salir             | Termina el programa.\n"
+                        )
+                    promt mundo estado
+                | cmd c == "salir" -> putStrLn ("adiosito")
+                | otherwise -> do
+                    putStrLn ("comando desconocido")
+                    promt mundo estado
 
 foldSala:: Sala -> Sala -> Sala
 foldSala b a  
@@ -170,7 +213,7 @@ foldSala b a
 
 foldObjeto:: Objeto -> Objeto -> Objeto
 foldObjeto b a 
-    | (\(Objeto id d)-> id) b == (\(Objeto id d)-> id) a = a
+    | (\(Objeto id d p)-> id) b == (\(Objeto id d p)-> id) a = a
     | otherwise = b
 
 foldSalida:: Salida -> Salida -> Salida 
@@ -189,15 +232,31 @@ extraerInicio m = salaInicio (extraerCabecera m)
 pasarMundo:: Mundo -> Estado -> String
 pasarMundo mn es = 
     let titulo = "MUNDO: " ++ tituloMundo (cabecera mn) ++ "\n"
-        inicio = "INICIO: " ++ salaInicio (cabecera mn) ++ "\n"
+        inicio = "INICIO: " ++ current es ++ "\n"
         meta = pasarMeta (metaMundo (cabecera mn))
+        capStr = "CAPACIDAD: " ++ show (capMax (cabecera mn)) ++ "\n"
+        invStr = let ids = [oID | Objeto oID _ _ <- inventario es]
+                 in if null ids 
+                    then "INVENTARIO: vacio\n" 
+                    else "INVENTARIO: " ++ unwords ids ++ "\n"
         totalObjetos = (\(a,b) -> b) (pasarObjetos( ((\(Bloque_Objetos x) -> x)(objetos mn)), ""))
         totalSalas = (\(a,b) -> b) (pasarSalas (((\(Bloque_Salas x) -> x)(salas mn)), ""))
-    in titulo ++ inicio ++ meta ++ totalObjetos ++ totalSalas
- 
+    in titulo ++ inicio ++  meta ++ capStr ++ invStr ++ totalObjetos ++ totalSalas
+
+{-
 pasarObjetos:: ([Objeto], String) -> ([Objeto], String)
 pasarObjetos ([], acc) = ([], acc)
-pasarObjetos ((x:xs), acc) = pasarObjetos (xs, acc ++ "---\n" ++ "OBJETO: " ++ ((\(Objeto o d)-> o)x) ++ "\n" ++ "DESC: " ++ ((\(Objeto o d)-> d)x) ++ "\n") 
+pasarObjetos ((x:xs), acc) = pasarObjetos (xs, acc ++ "---\n" ++ "OBJETO: " ++ ((\(Objeto o d)-> o)x) ++ "\n" ++ "DESC: " ++ ((\(Objeto o d)-> d)x) ++ "\n") -}
+
+-- para guardar el peso del objeto
+pasarObjetos:: ([Objeto], String) -> ([Objeto], String)
+pasarObjetos ([], acc) = ([], acc)
+pasarObjetos ((x:xs), acc) = 
+    let oID = (\(Objeto o _ _) -> o) x
+        desc = (\(Objeto _ d _) -> d) x
+        p = (\(Objeto _ _ w) -> w) x
+        lineaPeso = if p == 1 then "" else "PESO: " ++ show p ++ "\n"
+    in pasarObjetos (xs, acc ++ "---\n" ++ "OBJETO: " ++ oID ++ "\n" ++ "DESC: " ++ desc ++ "\n" ++ lineaPeso)
 
 pasarSalas:: ([Sala], String) -> ([Sala], String)
 pasarSalas ([], acc) = ([], acc)
@@ -229,7 +288,16 @@ formatearDir (Just x)
 
 pasarMeta :: Meta -> String
 pasarMeta (LlegarA sala) = "META: llegar a " ++ sala ++ "\n"
-pasarMeta (LlevarA sala obj) = "META: llevar " ++ obj ++ " a " ++ sala ++ "\n"
+pasarMeta (LlevarA obj sala) = "META: llevar " ++ obj ++ " a " ++ sala ++ "\n"
+
+verificarMeta :: Mundo -> Estado -> Bool
+verificarMeta mn es =
+    let idsInv = [oID | Objeto oID _ _ <- inventario es]
+    in case metaMundo (cabecera mn) of
+        LlegarA salaMeta ->
+            current es == salaMeta
+        LlevarA objMeta salaMeta ->
+            current es == salaMeta && elem objMeta idsInv
 
 
 -- instance Show Meta where
@@ -288,10 +356,9 @@ main = do
                     
                 Right mundoValido -> do
                     putStrLn "¡Mundo cargado y validado exitosamente!"
-                    -- putStrLn (pasarMundo mundoValido (Estado {current = (extraerInicio mundoValido), inventario = [], capacidad = 5}))
-                    promt mundoValido (Estado {current = (extraerInicio mundoValido), inventario = [], capacidad = 5})
-                    -- print mundoValido
-
+                    ---putStrLn (pasarMundo mundoValido (Estado {current = (extraerInicio mundoValido), inventario = [], capacidad = 5}))
+                    
+                    promt mundoValido (Estado {current = (extraerInicio mundoValido), inventario = [], capacidad = capMax (cabecera mundoValido)})
 
 
 
