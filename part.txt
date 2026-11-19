@@ -1,8 +1,8 @@
 MUNDO: El Misterio de la mansion Sombras
-INICIO: salon_principal
+INICIO: atico
 META: llevar carta_confesion a despacho_principal
 CAPACIDAD: 8
-INVENTARIO: guantes_latex linterna_uv
+INVENTARIO: llave_antigua guantes_latex codigo_cifrado carta_confesion
 ---
 OBJETO: lupa
 DESC: Una lupa de aumento con mango de caoba. Revela detalles ocultos.
@@ -39,11 +39,6 @@ DESC: El vestibulo principal de la mansion. Huele a humedad, sangre seca y viejo
 SALIDA: norte -> salon_principal
 OBJETO: lupa
 ---
-SALA: biblioteca
-DESC: Estanterias repletas de libros antiguos de derecho y grimorios polvorientos.
-SALIDA: oeste -> salon_principal
-OBJETO: codigo_cifrado
----
 SALA: caseta_herramientas
 DESC: Una pequeña construccion de madera llena de herramientas oxidadas.
 SALIDA: oeste -> jardin_trasero
@@ -61,11 +56,6 @@ DESC: Un calabozo subterraneo oculto bajo la mansión. Hay cadenas en las parede
 SALIDA: oeste -> pasillo_oscuro
 SALIDA: este -> pasillo_oscuro
 OBJETO: frasco_veneno
----
-SALA: atico
-DESC: El atico polvoriento. Un tragaluz deja ver una mesa de trabajo secreta.
-SALIDA: abajo -> pasillo_oscuro
-OBJETO: carta_confesion
 ---
 SALA: despacho_principal
 DESC: Un escritorio de roble espera la verdad oculta durante muchos años.
@@ -88,4 +78,12 @@ SALIDA: este -> biblioteca requiere llave_antigua
 SALIDA: oeste -> invernadero
 SALIDA: norte -> pasillo_oscuro requiere linterna_uv
 SALIDA: arriba -> despacho_principal requiere carta_confesion
-OBJETO: llave_antigua
+---
+SALA: biblioteca
+DESC: Estanterias repletas de libros antiguos de derecho y grimorios polvorientos.
+SALIDA: oeste -> salon_principal
+---
+SALA: atico
+DESC: El atico polvoriento. Un tragaluz deja ver una mesa de trabajo secreta.
+SALIDA: abajo -> pasillo_oscuro
+OBJETO: linterna_uv

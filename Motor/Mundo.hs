@@ -5,7 +5,7 @@ module Motor.Mundo (
 import Motor.Tipos
 import Motor.Reconocedor
 import Data.Char 
-import Data.List (nub)
+import Data.List 
 import Control.Monad (forM, forM_)
 import System.IO.Unsafe
 
@@ -15,7 +15,7 @@ leerMundo contenido =
     let lineasCrudas = lines contenido
         
         -- Primero validamos la sintaxis usando las lineas crudas y el contador recursivo
-        erroresSintaxis = validarSintaxis 1 lineasCrudas
+        erroresSintaxis = validarSintaxis 1 [] lineasCrudas
     in 
         if not (null erroresSintaxis)
         then Left erroresSintaxis
@@ -207,58 +207,71 @@ construirMundo lineasParse =
 
 --- Zona de Validaciones (V1 a V10) usando acumuladores de errores
 
+-- Lista de claves de cabecera obligatorias
+clavesCabeceraObligatorias :: [String]
+clavesCabeceraObligatorias = ["MUNDO", "INICIO", "META", "CAPACIDAD"]
+
 -- Funcion auxiliar recursiva que lleva el contador 'n' de la línea
-validarSintaxis :: Int -> [String] -> [ErrorMundo]
-validarSintaxis _ [] = []
-validarSintaxis n (linea:resto) =
+validarSintaxis :: Int -> [String] -> [String] -> [ErrorMundo]
+validarSintaxis _ vistas [] = 
+    -- Al terminar de leer todas las lineas, verificamos si falto alguna clave obligatoria
+    [ ErrorSintaxis 1 ("Falta la clave obligatoria de cabecera: " ++ k) 
+    | k <- clavesCabeceraObligatorias, notElem k vistas ]
+validarSintaxis n vistas (linea:resto) =
     let limpia = trim linea
     -- head aqui no falla. la razon es el corto circuito
     in if null limpia || head limpia == '#' || limpia == "---"
-       then validarSintaxis (n + 1) resto  -- Ignorar líneas vacías, comentarios o separadores
+       then validarSintaxis (n + 1) vistas resto -- Ignorar líneas vacías, comentarios o separadores
        else 
-           let errorMsg = clasificarErrorSintaxis linea
+           let (errorMsg, nuevasVistas) = clasificarErrorSintaxis linea vistas
            in if not (null errorMsg)
-              then [ErrorSintaxis n errorMsg] ++ validarSintaxis (n + 1) resto
-              else validarSintaxis (n + 1) resto
+              then ErrorSintaxis n errorMsg : validarSintaxis (n + 1) nuevasVistas resto
+              else validarSintaxis (n + 1) nuevasVistas resto
                      
-clasificarErrorSintaxis :: String -> String
-clasificarErrorSintaxis linea
-    | not (elem ':' linea) = "Linea sin la forma CLAVE: valor"
+clasificarErrorSintaxis :: String -> [String] -> (String, [String])
+clasificarErrorSintaxis linea vistas
+    | not (elem ':' linea) = ("Linea sin la forma CLAVE: valor", vistas)
     | otherwise =
         let (claveCruda, valorCrudo) = separarDosPuntos linea
             clave = trim claveCruda
             valor = trim valorCrudo
+            esCabecera = elem clave clavesCabeceraObligatorias
+            nuevasVistas = if esCabecera && notElem clave vistas 
+                           then clave : vistas 
+                           else vistas
         in if notElem clave ["MUNDO", "INICIO", "META", "OBJETO", "DESC", "SALA", "SALIDA", "CAPACIDAD", "PESO", "INVENTARIO"]
-           then "Clave desconocida: " ++ clave
-           else if null valor
-                then "La clave '" ++ clave ++ "' no tiene valor"
-                else if elem clave ["SALA", "OBJETO"] && any isSpace valor
-                     then "Identificador invalido: no debe contener espacios (use guion bajo '_')"
-                     else if clave == "CAPACIDAD" || clave == "PESO"
-                          then if not (all isDigit valor) || read valor <= 0
-                               then "Valor invalido: debe ser un entero positivo"
-                               else ""
-                          else if clave == "META"
-                               then 
-                                   let palabras = words valor
-                                   -- head aqui tampoco falla, pues ya verificamos que palabras no sea null
-                                   in if null palabras || 
-                                         (head palabras == "llegar" && length palabras /= 3) || 
-                                         (head palabras == "llevar" && length palabras /= 4) ||
-                                         notElem (head palabras) ["llegar", "llevar"]
-                                      then "Meta mal formada. Use: 'META: llegar a [sala]' o 'META: llevar [objeto] a [sala]'"
-                                      else ""
-                               else if clave == "SALIDA"
-                                    then
+           then ("Clave desconocida: " ++ clave, vistas)
+           else if esCabecera && elem clave vistas
+                then ("Clave de cabecera repetida: " ++ clave, vistas)
+                else if null valor
+                     then ("La clave '" ++ clave ++ "' no tiene valor", nuevasVistas)
+                     else if elem clave ["SALA", "OBJETO"] && any isSpace valor
+                          then ("Identificador invalido: no debe contener espacios (use guion bajo '_')", nuevasVistas)
+                          else if clave == "CAPACIDAD" || clave == "PESO"
+                               then if not (all isDigit valor) || read valor <= 0
+                                    then ("Valor invalido: debe ser un entero positivo", nuevasVistas)
+                                    else ("", nuevasVistas)
+                               else if clave == "META"
+                                    then 
                                         let palabras = words valor
-                                        in if null palabras 
-                                           then "Salida mal formada: falta la direccion"
-                                           else 
-                                               case stringToDir (head palabras) of
-                                                   Nothing -> "Direccion inexistente o salida mal formada"
-                                                   Just _  -> ""
-                                    else ""
-                 
+                                        -- head aqui tampoco falla, pues ya verificamos que palabras no sea null 
+                                        in if null palabras || 
+                                              (head palabras == "llegar" && length palabras /= 3) || 
+                                              (head palabras == "llevar" && length palabras /= 4) ||
+                                              notElem (head palabras) ["llegar", "llevar"]
+                                           then ("Meta mal formada. Use: 'META: llegar a [sala]' o 'META: llevar [objeto] a [sala]'", nuevasVistas)
+                                           else ("", nuevasVistas)
+                                    else if clave == "SALIDA"
+                                         then
+                                             let palabras = words valor
+                                             in if null palabras 
+                                                then ("Salida mal formada: falta la direccion", nuevasVistas)
+                                                else 
+                                                    case stringToDir (head palabras) of
+                                                        Nothing -> ("Direccion inexistente o salida mal formada", nuevasVistas)
+                                                        Just _  -> ("", nuevasVistas)
+                                         else ("", nuevasVistas)
+                
 separarDosPuntos :: String -> (String, String)
 separarDosPuntos [] = ([], [])
 separarDosPuntos (c:cs)

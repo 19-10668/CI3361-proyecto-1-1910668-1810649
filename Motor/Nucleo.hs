@@ -99,12 +99,16 @@ tomarPoner (Bloque_Salas salas) mn id es ido=
         new_Sala = Sala old_ID_Sala old_Desc old_Salidas ( delete ( (\(Objeto n d p) -> n) (buscarObjeto mn 1 es ido))  ((\(Sala a b c d)->d) (buscarSala mn (current es))))
     in Bloque_Salas ( (delete old salas) ++ [new_Sala] )
 
-soltar:: Mundo -> ID_Objeto -> Estado ->(Mundo, Estado)
-soltar mn id es = (Mundo {
-    cabecera = cabecera mn,
-    objetos = objetos mn,
-    salas = (soltarPoner (salas mn) mn (current es) es id)}, es {inventario = (delete (buscarObjeto mn 3 es id) (inventario es))})
-
+soltar :: Mundo -> ID_Objeto -> Estado -> (Mundo, Estado, String)
+soltar mn id es =
+    let idsInv = [oID | Objeto oID _ _ <- inventario es]
+    in if not (elem id idsInv)
+       then (mn, es, "No tienes ese objeto en tu inventario.")
+       else (Mundo {
+                cabecera = cabecera mn,
+                objetos = objetos mn,
+                salas = soltarPoner (salas mn) mn (current es) es id
+            }, es {inventario = delete (buscarObjeto mn 3 es id) (inventario es)}, "Has soltado: " ++ id)
 
 
 soltarPoner:: Bloque_Salas -> Mundo -> ID_Sala -> Estado -> ID_Objeto -> Bloque_Salas

@@ -1,7 +1,8 @@
-# Errores de Sintaxis:La clave 'INICIO' no tiene valor, Clave desconocida: fin, Meta mal formada, Identificador invalido: no debe contener espacios (use guion bajo '_')"
+# Errores de Sintaxis:La clave 'INICIO' no tiene valor y tambien se repite la misma clave, Clave desconocida: fin, Meta mal formada, Identificador invalido: no debe contener espacios (use guion bajo '_')"
 
 MUNDO: El Misterio de la mansion Sombras
 INICIO:
+INICIO: invernadero
 fin: 
 META: llevar el carta_confesion a despacho_principal
 CAPACIDAD: 8

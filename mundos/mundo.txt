@@ -73,7 +73,6 @@ OBJETO: linterna_uv
 SALA: caseta_herramientas
 DESC: Una pequeña construccion de madera llena de herramientas oxidadas.
 SALIDA: oeste -> jardin_trasero
-SALIDA: este -> jardin_trasero
 OBJETO: palanca
 ---
 SALA: pasillo_oscuro
@@ -85,7 +84,6 @@ SALIDA: arriba -> atico requiere codigo_cifrado
 SALA: sotano_secreto
 DESC: Un calabozo subterraneo oculto bajo la mansión. Hay cadenas en las paredes.
 SALIDA: oeste -> pasillo_oscuro
-SALIDA: este -> pasillo_oscuro
 OBJETO: frasco_veneno
 ---
 SALA: atico
