@@ -1,8 +1,23 @@
-Declaracion del uso de la IA de parte de Renata Colon, carnet 1810649.
+# Declaración del uso de IA
 
-Gemini AI: Para poder resolver los problemas que emergian y entender lo que aparecia en la terminal al compilar (principalmente de pattern mathing o de identacion), correcciones de implementaciones, preguntas de las clases que salieron a relucir mientras estaba en el proyecto y guias cuando me encontraba perdida entre tantas lineas de codigo.
-Para poder detectar los errores de V9 (sala no alcanzable desde INICIO) sabia que era un problema de buscar un camino desde el vertice inicial hasta cada vertice/sala, pense en DFS y BFS, gano este ultimo por caracterizarse en el retorno de caminos de menor longitud desde un vertice s hasta cada alcanzable, pero como implementarlo en un lenguaje funcional se me complico, por lo que fue de gran ayuda, sin embargo cuando lo coloque en el programa siempre lanzaba un error porque nunca recorria el grafo completo sino que se quedaba en el inicio porque llamo la funcion con la estructura que representaba los vertices visitados con el mismo vertice inical, lo cual afectaba porque BFS añade a visitados a este y verifica sino esta en el mismo para poder revisar a sus hijos.
-Muchas veces tuve problemas cambiadno el archivo que no era y cuando lo probaba no aparecia los cambios que hacia, la IA me recomendaba cambiar el archivo en varias lineas que estaban bien y como no tenia sentido probaba otras cosas hasta que me daba cuenta de cual era el archivo que estaba modificando.
-En otras me daba soluciones a problemas con librerias especiales donde con pattern matching resolviamos.
-Para encadenar los errores semanticos yo lo visualizaba con el monad de listas pero Gemini me proponia hacer varias funciones e imprimir sus resultados cuando los tenian, tome lo que se me ocurrio porque me parecio mas conveniente.
-Mi compañero prefiere no usar IA, por lo cual en esta declaracion solo cuenta con mis palabras. 
+**Autora:** Renata Colon, carnet 1810649.
+
+**Nota:** Mi compañero prefiere no utilizar inteligencia artificial, por lo que esta declaración refleja únicamente mi experiencia y mis palabras.
+
+---
+
+## Cómo usé Gemini AI durante el proyecto
+
+Utilicé **Gemini AI** como apoyo para entender mensajes de error al compilar (sobre todo cuando no coincidían los casos que yo esperaba o cuando mezclaba tabulaciones con espacios sin darme cuenta), revisar partes de mi código, aclarar dudas de clase que surgían mientras avanzaba y orientarme cuando me sentía perdida entre tantas líneas.
+
+### Un ejemplo donde me ayudó y un error que tuve que corregir
+
+Para detectar salas a las que no se podía llegar desde el inicio, sabía que debía revisar las conexiones como un mapa de lugares y caminos. Pensé en recorrerlo a fondo o por niveles, y me incliné por recorrerlo por niveles porque muestra el camino más corto desde el punto de partida hacia cada lugar alcanzable. Como no me resultaba sencillo escribir esa idea en este estilo de programación, la IA me ayudó a darle forma. Sin embargo, al probarlo en el programa, siempre fallaba y se quedaba en el punto inicial porque yo lo llamaba pasando el lugar de partida ya marcado como visitado; como el recorrido marca lo visitado y revisa solo lo que falta para pasar a los siguientes lugares, ese detalle bloqueaba el avance.
+
+### Un ejemplo donde rechacé o descarté una sugerencia
+
+Para juntar todos los errores de sentido del mundo en una sola lista, yo tenía en mente hacerlo concatenando listas paso a paso, mientras que Gemini me proponía armar varias funciones separadas e ir mostrando sus resultados a medida que aparecían. Decidí seguir mi propia idea porque me pareció más cómoda y ordenada para lo que estaba haciendo.
+
+### Otras situaciones y aprendizajes
+
+En varias ocasiones estuve editando un archivo equivocado y al probar el programa no veía reflejados mis cambios; ante eso, la IA me sugería tocar varias líneas que en realidad estaban bien, y como no tenía sentido, busqué por mi cuenta hasta darme cuenta de qué archivo estaba tocando en verdad. En otros momentos, cuando aparecían complicaciones con ciertas herramientas o partes del código, resolvimos el problema revisando los casos posibles paso a paso, en vez de usar las soluciones complicadas o el uso de otras librerías que mencionaba Gemini.
