@@ -117,37 +117,45 @@ promt mundo estado =
 --     show (ErrorSintaxis a b) = (show a) ++ b
 --     show (ErrorSemantico a) = a 
 
-captarArgs:: [String] -> Either String String
-captarArgs [] = Left "error: modo de uso: ./aventura <mundo.txt>"
-captarArgs (x:xs) = Right x
+--captarArgs:: [String] -> Either String String
+--captarArgs [] = Left "error: modo de uso: ./aventura <mundo.txt>"
+--captarArgs (x:xs) = Right x
+
+data Modo = ModoValidar FilePath | ModoJugar FilePath
+
+captarArgs :: [String] -> Either String Modo
+captarArgs ["-validar", ruta] = Right (ModoValidar ruta)
+captarArgs [ruta]             = Right (ModoJugar ruta)
+captarArgs []                 = Left "Error: modo de uso: aventura mundo.txt"
+captarArgs _                  = Left "Error: argumentos inválidos. Uso: aventura mundo.txt"
 
 main :: IO ()
 main = do
-    putStrLn("bienvenido a la aventura")
-
     args <- getArgs
-    
-    -- promt
-    
     case captarArgs args of
         Left fallo -> do
             putStrLn fallo
-        Right arg -> do
-            mundo <- leerArchivo (arg)
-            case leerMundo mundo of
+        Right (ModoValidar ruta) -> do
+            contenido <- leerArchivo ruta
+            case leerMundo contenido of
+                Left errores -> do
+                    mapM_ print errores
+                Right _ -> do
+                    putStrLn "Mundo válido."
+        Right (ModoJugar ruta) -> do
+            contenido <- leerArchivo ruta
+            case leerMundo contenido of
                 Left errores -> do
                     putStrLn "¡Se encontraron errores en el archivo del mundo!"
-                    -- Imprimimos todos los errores acumulados (V1 a V10)
                     mapM_ print errores
-                    
                 Right mundoValido -> do
-                    putStrLn "¡Mundo cargado y validado exitosamente!"
-                    ---putStrLn (pasarMundo mundoValido (Estado {current = (extraerInicio mundoValido), inventario = [], capacidad = 5}))
-                    
-                    promt mundoValido (Estado {current = (extraerInicio mundoValido), inventario = [], capacidad = capMax (cabecera mundoValido)})
-
-
-
+                    putStrLn "bienvenido a la aventura"
+                    promt mundoValido
+                        (Estado
+                            { current = extraerInicio mundoValido
+                            , inventario = []
+                            , capacidad = capMax (cabecera mundoValido)
+                            })
 
 --    let mundin = vaciarInfo mundo
 

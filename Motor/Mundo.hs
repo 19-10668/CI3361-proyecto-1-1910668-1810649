@@ -230,35 +230,34 @@ clasificarErrorSintaxis linea
             valor = trim valorCrudo
         in if notElem clave ["MUNDO", "INICIO", "META", "OBJETO", "DESC", "SALA", "SALIDA", "CAPACIDAD", "PESO", "INVENTARIO"]
            then "Clave desconocida: " ++ clave
-           else if elem clave ["SALA", "OBJETO"] && (null valor || any isSpace valor)
-                then "Identificador invalido: no debe contener espacios (use guion bajo '_')"
-                else if clave == "CAPACIDAD" || clave == "PESO"
-                     then if null valor || not (all isDigit valor) || read valor <= 0
-                          then "Valor invalido: debe ser un entero positivo"
-                          else ""
-                     else if clave == "INVENTARIO"
-                 then if null valor then "Valor invalido: inventario vacio" else ""
-                     else if clave == "META"
-                          then 
-                              let palabras = words valor
-                              -- head aqui tampoco falla, pues ya verificamos que palabras no sea null
-                              in if null palabras || 
-                                    (head palabras == "llegar" && length palabras /= 3) || 
-                                    (head palabras == "llevar" && length palabras /= 4) ||
-                                    notElem (head palabras) ["llegar", "llevar"]
-                                 then "Meta mal formada. Use: 'META: llegar a [sala]' o 'META: llevar [objeto] a [sala]'"
-                                 else ""
-                          else if clave == "SALIDA"
-                               then
-                               -- Tomamos la primera palabra del valor de la salida    
-                                   let palabras = words valor
-                                   in if null palabras 
-                                      then "Salida mal formada: falta la direccion"
-                                      else 
-                                          case stringToDir (head palabras) of
-                                              Nothing -> "Direccion inexistente o salida mal formada"
-                                              Just _  -> ""
+           else if null valor
+                then "La clave '" ++ clave ++ "' no tiene valor"
+                else if elem clave ["SALA", "OBJETO"] && any isSpace valor
+                     then "Identificador invalido: no debe contener espacios (use guion bajo '_')"
+                     else if clave == "CAPACIDAD" || clave == "PESO"
+                          then if not (all isDigit valor) || read valor <= 0
+                               then "Valor invalido: debe ser un entero positivo"
                                else ""
+                          else if clave == "META"
+                               then 
+                                   let palabras = words valor
+                                   -- head aqui tampoco falla, pues ya verificamos que palabras no sea null
+                                   in if null palabras || 
+                                         (head palabras == "llegar" && length palabras /= 3) || 
+                                         (head palabras == "llevar" && length palabras /= 4) ||
+                                         notElem (head palabras) ["llegar", "llevar"]
+                                      then "Meta mal formada. Use: 'META: llegar a [sala]' o 'META: llevar [objeto] a [sala]'"
+                                      else ""
+                               else if clave == "SALIDA"
+                                    then
+                                        let palabras = words valor
+                                        in if null palabras 
+                                           then "Salida mal formada: falta la direccion"
+                                           else 
+                                               case stringToDir (head palabras) of
+                                                   Nothing -> "Direccion inexistente o salida mal formada"
+                                                   Just _  -> ""
+                                    else ""
                  
 separarDosPuntos :: String -> (String, String)
 separarDosPuntos [] = ([], [])
@@ -358,6 +357,7 @@ validarReferencias mundo  invArchivo =
                          case metaDef of { LlevarA mObj _ -> [mObj]; _ -> [] }
         errV10 = [ ErrorSemantico ("Error V10: El objeto '" ++ oID ++ "' es necesario pero no está colocado en ninguna sala.")
                  | oID <- objsNecesarios
+                 , elem oID setObjs
                  , notElem oID todosObjsEnSalas
                  , notElem oID invArchivo -- Tampoco lo tiene el jugador en el inventario
                  ]
@@ -369,7 +369,7 @@ validarReferencias mundo  invArchivo =
         errCapacidadInv = [ ErrorSemantico ("Error Capacidad: El peso total del inventario guardado (" ++ show pesoInvArchivo ++ ") supera la capacidad maxima (" ++ show maxCap ++ ").")
                           | pesoInvArchivo > maxCap ]
                       
-      in errV3 <> errV4 <> errV5 <> errV6 <> errV7 <> errInicio <> errMeta <> errV9 <> errV10 <> errPesoObjs <> errCapacidadInv
+      in errPesoObjs <> errCapacidadInv <> errV3 <> errV4 <> errV5 <> errV6 <> errV7 <> errInicio <> errMeta <> errV9 <> errV10 
 --    in dbg1 `seq` dbg2 `seq` dbg3 `seq` (errV3 <> errV4 <> errV5 <> errV6 <> errV7 <> errInicio <> errMeta <> errV9 <> errV10 <> errPesoObjs)
 
 

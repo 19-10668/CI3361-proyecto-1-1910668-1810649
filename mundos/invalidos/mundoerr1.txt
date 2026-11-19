@@ -1,0 +1,101 @@
+# Contiene errores: V2 (objeto duplicado), V3 (salida a sala inexistente) y V5 (dos direcciones que apuntan a lugares diferentes).
+MUNDO: El Misterio de la mansion Sombras
+INICIO: vestibulo
+META: llevar carta_confesion a despacho_principal
+CAPACIDAD: 8
+---
+OBJETO: lupa
+DESC: Una lupa de aumento con mango de caoba. Revela detalles ocultos.
+PESO: 2
+---
+OBJETO: lupa
+DESC: Una lupa de aumento con mango de caoba. Revela detalles ocultos.
+PESO: 2
+---
+OBJETO: linterna_uv
+DESC: Una linterna de luz ultravioleta que hace brillar fluidos invisibles.
+PESO: 2
+---
+OBJETO: llave_antigua
+DESC: Una llave pesada de hierro forjado con marcas de oxido.
+PESO: 3
+---
+OBJETO: guantes_latex
+DESC: Guantes protectores para no contaminar la escena del crimen.
+PESO: 1
+---
+OBJETO: palanca
+DESC: Una barra de hierro robusta para forzar cerraduras atascadas.
+PESO: 5
+---
+OBJETO: frasco_veneno
+DESC: Un frasco con un liquido sospechoso y restos de almendras amargas.
+PESO: 2
+---
+OBJETO: codigo_cifrado
+DESC: Un pergamino con una clave numerica indescifrable a simple vista.
+PESO: 1
+---
+OBJETO: carta_confesion
+DESC: Escrito que declara toda la verdad del caso y los culpables.
+PESO: 2
+---
+SALA: vestibulo
+DESC: El vestibulo principal de la mansión. Huele a humedad, sangre seca y viejo.
+SALIDA: norte -> salon_principal
+OBJETO: lupa
+---
+SALA: salon_principal
+DESC: Una sala amplia con una chimenea apagada y retratos siniestros en las paredes.
+SALIDA: sur -> vestibulo
+SALIDA: este -> biblioteca requiere llave_antigua
+SALIDA: oeste -> invernadero
+SALIDA: norte -> pasillo_oscuro requiere linterna_uv
+SALIDA: arriba -> despacho_principal requiere carta_confesion
+OBJETO: guantes_latex
+---
+SALA: biblioteca
+DESC: Estanterías repletas de libros antiguos de derecho y grimorios polvorientos.
+SALIDA: oeste -> salon_principal
+SALIDA: este -> baño
+SALIDA: este -> atico
+OBJETO: codigo_cifrado
+---
+SALA: invernadero
+DESC: Plantas marchitas bajo un techo de cristal agrietado y telarañas.
+SALIDA: este -> salon_principal
+SALIDA: norte -> jardin_trasero requiere guantes_latex
+OBJETO: llave_antigua
+---
+SALA: jardin_trasero
+DESC: El jardin oscuro bajo la luz de la luna. Hay pisadas recientes en el barro.
+SALIDA: sur -> invernadero
+SALIDA: este -> caseta_herramientas
+OBJETO: linterna_uv
+---
+SALA: caseta_herramientas
+DESC: Una pequeña construccion de madera llena de herramientas oxidadas.
+SALIDA: oeste -> jardin_trasero
+SALIDA: este -> jardin_trasero
+OBJETO: palanca
+---
+SALA: pasillo_oscuro
+DESC: Un pasillo tenebroso donde el aire es gelido. Las paredes estan manchadas.
+SALIDA: sur -> salon_principal
+SALIDA: este -> sotano_secreto requiere palanca
+SALIDA: arriba -> atico requiere codigo_cifrado
+---
+SALA: sotano_secreto
+DESC: Un calabozo subterraneo oculto bajo la mansión. Hay cadenas en las paredes.
+SALIDA: oeste -> pasillo_oscuro
+SALIDA: este -> pasillo_oscuro
+OBJETO: frasco_veneno
+---
+SALA: atico
+DESC: El atico polvoriento. Un tragaluz deja ver una mesa de trabajo secreta.
+SALIDA: abajo -> pasillo_oscuro
+OBJETO: carta_confesion
+---
+SALA: despacho_principal
+DESC: Un escritorio de roble espera la verdad oculta durante muchos años.
+SALIDA: sur -> salon_principal

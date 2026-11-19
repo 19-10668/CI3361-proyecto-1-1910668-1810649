@@ -1,0 +1,33 @@
+mirar
+norte
+mirar
+tomar guantes_latex
+oeste
+mirar
+tomar llave_antigua
+norte
+mirar
+tomar linterna_uv
+sur
+mirar
+este
+mirar
+este
+mirar
+inv
+soltar llave_antigua
+inv
+tomar codigo_cifrado
+oeste
+mirar
+norte
+mirar
+arriba
+mirar
+tomar carta_confesion
+abajo
+mirar
+sur
+mirar
+arriba
+
