@@ -1,6 +1,6 @@
 # CI3361-proyecto-1-1910668-1810649
 
-## integrantes:
+## Integrantes:
 * Gastón García - 1910668
 * Renata Colon - 1810649
 
