@@ -11,3 +11,4 @@
 ## Compilacion y ejecucion:
 Se compila el proyecto colocandose en la carpeta raiz y escribiendo el comando "ghc -o aventura ./app/Main.hs" en la consola de comandos. Luego, para ejecutar, se hace "./aventura <mundo>" o "./aventura -validar <mundo>" o "./aventura <mundo> < <guion>" donde mundo y guion es el txt con el mundo.
 Para las pruebas "cabal test" o corre "cabal update" primero si necesitas descargar alguna dependencia que no tengas instalada.
+ 
